@@ -92,7 +92,6 @@ class TgCall(PyTgCalls):
 
         ffmpeg_params = (
             (f"-ss {seek_time} " if seek_time > 1 else "")
-            + (f"-af {media.filter} " if media.filter else "")
             + ("-vn" if not media.video else "")
         ).strip()
 

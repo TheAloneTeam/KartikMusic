@@ -84,8 +84,6 @@
     "play_skipped": "<b>Stream skipped by</b> {0}",
     "play_stopped": "<b>Stream ended by</b> {0}",
     "play_seeked": "<b>Stream skipped {0} and started from {1} seconds by</b> {2}",
-    "applying_effect": "Applying <b>{0}</b> effect, please wait...",
-    "effect_applied": "<b>{0}</b> effect applied by {1}",
     "play_expired": "This button has expired.",
     "play_unsupported": "Live streams are not supported.",
     "play_already_paused": "Do you remember that you resumed the stream?",
@@ -159,7 +157,5 @@
     "help_7": "Stats",
     "help_8": "Sudoers",
     "help_9": "Thumbnail",
-    "help_10": "Effects",
-    "help_thumb": "<u><b>Thumbnail commands:</b></u>\n\n/thumb: Toggles the thumbnail on/off for the chat.",
-    "help_effects": "<u><b>Audio effects commands:</b></u>\n\n/bass: Enhance the bass of the current track.\n/echo: Add a reverb echo effect to the song.\n/slowed: Slow down the tempo with reverb.\n/nightcore: Speed up pitch and tempo of track.\n/normal: Reset all effects to default state."
+    "help_thumb": "<u><b>Thumbnail commands:</b></u>\n\n/thumb: Toggles the thumbnail on/off for the chat."
 }
