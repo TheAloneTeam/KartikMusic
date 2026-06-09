@@ -90,6 +90,12 @@ async def play_hndlr(
 
     file.user = mention
     if force:
+        current = queue.get_current(m.chat.id)
+        if current and current.message_id:
+            try:
+                await app.delete_messages(m.chat.id, current.message_id)
+            except Exception:
+                pass
         queue.force_add(m.chat.id, file)
     else:
         position = queue.add(m.chat.id, file)
