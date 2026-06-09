@@ -57,6 +57,10 @@ class TgCall(PyTgCalls):
             pass
 
 
+    async def _cooldown(self, chat_id: int):
+        await asyncio.sleep(5)
+        self.restarting[chat_id] -= 1
+
     async def play_media(
         self,
         chat_id: int,
@@ -65,111 +69,112 @@ class TgCall(PyTgCalls):
         seek_time: int = 0,
     ) -> None:
         self.restarting[chat_id] += 1
-        if await db.get_call(chat_id):
-            await asyncio.sleep(0.5)
-        client = await db.get_assistant(chat_id)
-        _lang = await lang.get_lang(chat_id)
-        _thumb_mode = await db.get_thumb_mode(chat_id)
-        _thumb = (
-            (
-                await thumb.generate(media)
-                if isinstance(media, Track)
-                else config.DEFAULT_THUMB
-            )
-            if config.THUMB_GEN and _thumb_mode
-            else None
-        )
-
-        if not media.file_path:
-            await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
-            return await self.play_next(chat_id)
-
-        ffmpeg_params = (
-            (f"-ss {seek_time} " if seek_time > 1 else "")
-            + (f"-af {media.filter} " if media.filter else "")
-            + ("-vn" if not media.video else "")
-        ).strip()
-
-        stream = types.MediaStream(
-            media_path=media.file_path,
-            audio_parameters=types.AudioQuality.HIGH,
-            video_parameters=types.VideoQuality.HD_720p,
-            audio_flags=types.MediaStream.Flags.REQUIRED,
-            video_flags=(
-                types.MediaStream.Flags.AUTO_DETECT
-                if media.video
-                else types.MediaStream.Flags.IGNORE
-            ),
-            ffmpeg_parameters=ffmpeg_params or None,
-        )
-
         try:
             if await db.get_call(chat_id):
-                try:
-                    logger.info(f"Changing stream for {chat_id} with params: {ffmpeg_params}")
-                    await client.change_stream(chat_id, stream)
-                except Exception as e:
-                    logger.error(f"Error in change_stream: {e}")
-                    await client.play(chat_id, stream)
-            else:
-                await client.play(chat_id, stream)
-            media.played_at = time.time()
-            if seek_time:
-                media.time = seek_time
-            else:
-                media.time = 1
-                await db.add_call(chat_id)
-                text = _lang["play_media"].format(
-                    media.url,
-                    media.title,
-                    media.duration,
-                    media.user,
+                await asyncio.sleep(0.5)
+            client = await db.get_assistant(chat_id)
+            _lang = await lang.get_lang(chat_id)
+            _thumb_mode = await db.get_thumb_mode(chat_id)
+            _thumb = (
+                (
+                    await thumb.generate(media)
+                    if isinstance(media, Track)
+                    else config.DEFAULT_THUMB
                 )
-                keyboard = buttons.controls(chat_id)
-                try:
-                    if _thumb:
-                        await message.edit_media(
-                            media=InputMediaPhoto(
-                                media=_thumb,
+                if config.THUMB_GEN and _thumb_mode
+                else None
+            )
+
+            if not media.file_path:
+                await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+                return await self.play_next(chat_id)
+
+            ffmpeg_params = (
+                (f"-ss {seek_time} " if seek_time > 1 else "")
+                + (f"-af {media.filter} " if media.filter else "")
+                + ("-vn" if not media.video else "")
+            ).strip()
+
+            stream = types.MediaStream(
+                media_path=media.file_path,
+                audio_parameters=types.AudioQuality.HIGH,
+                video_parameters=types.VideoQuality.HD_720p,
+                audio_flags=types.MediaStream.Flags.REQUIRED,
+                video_flags=(
+                    types.MediaStream.Flags.AUTO_DETECT
+                    if media.video
+                    else types.MediaStream.Flags.IGNORE
+                ),
+                ffmpeg_parameters=ffmpeg_params or None,
+            )
+
+            try:
+                if await db.get_call(chat_id):
+                    try:
+                        # Using play() for restarts as it's more reliable for changing ffmpeg params
+                        logger.info(f"Restarting stream for {chat_id} with params: {ffmpeg_params}")
+                        await client.play(chat_id, stream)
+                    except Exception as e:
+                        logger.error(f"Error in play (restart): {e}")
+                        await client.change_stream(chat_id, stream)
+                else:
+                    await client.play(chat_id, stream)
+                media.played_at = time.time()
+                if seek_time:
+                    media.time = seek_time
+                else:
+                    media.time = 1
+                    await db.add_call(chat_id)
+                    text = _lang["play_media"].format(
+                        media.url,
+                        media.title,
+                        media.duration,
+                        media.user,
+                    )
+                    keyboard = buttons.controls(chat_id)
+                    try:
+                        if _thumb:
+                            await message.edit_media(
+                                media=InputMediaPhoto(
+                                    media=_thumb,
+                                    caption=text,
+                                ),
+                                reply_markup=keyboard,
+                            )
+                        else:
+                            await message.edit_text(text, reply_markup=keyboard)
+                    except (ChatSendMediaForbidden, ChatSendPhotosForbidden, MessageIdInvalid):
+                        if _thumb:
+                            sent = await app.send_photo(
+                                chat_id=chat_id,
+                                photo=_thumb,
                                 caption=text,
-                            ),
-                            reply_markup=keyboard,
-                        )
-                    else:
-                        await message.edit_text(text, reply_markup=keyboard)
-                except (ChatSendMediaForbidden, ChatSendPhotosForbidden, MessageIdInvalid):
-                    if _thumb:
-                        sent = await app.send_photo(
-                            chat_id=chat_id,
-                            photo=_thumb,
-                            caption=text,
-                            reply_markup=keyboard,
-                        )
-                    else:
-                        sent = await app.send_message(
-                            chat_id=chat_id,
-                            text=text,
-                            reply_markup=keyboard,
-                        )
-                    media.message_id = sent.id
-        except FileNotFoundError:
-            await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
-            await self.play_next(chat_id)
-        except exceptions.NoActiveGroupCall:
-            await self.stop(chat_id)
-            await message.edit_text(_lang["error_no_call"])
-        except exceptions.NoAudioSourceFound:
-            await message.edit_text(_lang["error_no_audio"])
-            await self.play_next(chat_id)
-        except (ConnectionError, ConnectionNotFound, TelegramServerError):
-            await self.stop(chat_id)
-            await message.edit_text(_lang["error_tg_server"])
-        except RTMPStreamingUnsupported:
-            await self.stop(chat_id)
-            await message.edit_text(_lang["error_rtmp"])
+                                reply_markup=keyboard,
+                            )
+                        else:
+                            sent = await app.send_message(
+                                chat_id=chat_id,
+                                text=text,
+                                reply_markup=keyboard,
+                            )
+                        media.message_id = sent.id
+            except FileNotFoundError:
+                await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+                await self.play_next(chat_id)
+            except exceptions.NoActiveGroupCall:
+                await self.stop(chat_id)
+                await message.edit_text(_lang["error_no_call"])
+            except exceptions.NoAudioSourceFound:
+                await message.edit_text(_lang["error_no_audio"])
+                await self.play_next(chat_id)
+            except (ConnectionError, ConnectionNotFound, TelegramServerError):
+                await self.stop(chat_id)
+                await message.edit_text(_lang["error_tg_server"])
+            except RTMPStreamingUnsupported:
+                await self.stop(chat_id)
+                await message.edit_text(_lang["error_rtmp"])
         finally:
-            await asyncio.sleep(5)
-            self.restarting[chat_id] -= 1
+            asyncio.create_task(self._cooldown(chat_id))
 
 
     async def replay(self, chat_id: int) -> None:
