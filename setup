@@ -1,0 +1,134 @@
+#!/bin/bash
+
+set -o pipefail
+
+[ -n "$BASH_VERSION" ] || { echo "Run with bash"; exit 1; }
+command -v sudo &>/dev/null || { echo "sudo is required"; exit 1; }
+
+pprint() {
+    local msg="$1" c="$2" r="\033[0m"
+    case "$c" in
+        cred) c="\033[0;31m";; cgreen) c="\033[0;32m";;
+        cyellow) c="\033[0;33m";; cblue) c="\033[0;34m";;
+        cmagenta) c="\033[0;35m";; *) c="\033[0;35m";;
+    esac
+    printf "%b%b%b" "$c" "$msg" "$r"
+}
+
+update() {
+    pprint "\n\nUpdating system...\n" "cblue"
+
+    if sudo apt-get update -y &>/dev/null && sudo apt-get upgrade -y &>/dev/null; then
+        pprint "Done.\n\n" "cgreen"
+    else
+        pprint "Failed.\n\n" "cred"
+    fi
+}
+
+install_pkgs() {
+    missing=()
+    for pkg in "$@"; do
+        dpkg -s "$pkg" &>/dev/null || missing+=("$pkg")
+    done
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        pprint "Installing: ${missing[*]}... " "cyellow"
+        if sudo apt-get install -y "${missing[@]}" &>/dev/null; then
+            pprint "Done.\n\n" "cgreen"
+        else
+            pprint "Failed.\n\n" "cred"
+        fi
+    else
+        pprint "All packages already installed.\n\n" "cgreen"
+    fi
+}
+
+install_deno() {
+    pprint "\n\nInstalling Deno...\n" "cblue"
+
+    if command -v deno &>/dev/null; then
+        pprint "Deno already installed.\n" "cgreen"
+        return
+    fi
+
+    if curl -fsSL https://deno.land/install.sh | sh; then
+        deno_path="$HOME/.deno/bin"
+
+        if ! grep -q 'DENO_INSTALL' "$HOME/.bashrc"; then
+            {
+                echo 'export DENO_INSTALL="$HOME/.deno"'
+                echo 'export PATH="$DENO_INSTALL/bin:$PATH"'
+            } >> "$HOME/.bashrc"
+            pprint "Deno path added to ~/.bashrc\n" "cyellow"
+        fi
+
+        export DENO_INSTALL="$HOME/.deno"
+        export PATH="$DENO_INSTALL/bin:$PATH"
+
+        pprint "Deno installation complete.\n" "cgreen"
+    else
+        pprint "Deno installation failed.\n" "cred"
+    fi
+}
+
+install_uv() {
+    if ! command -v uv &>/dev/null; then
+        pprint "\nInstalling uv...\n" "cblue"
+        if curl -Ls https://astral.sh/uv/install.sh | sh; then
+            if ! grep -q '.local/bin' "$HOME/.bashrc"; then
+                echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+            fi
+            export PATH="$HOME/.local/bin:$PATH"
+            pprint "uv installed.\n" "cgreen"
+        else
+            pprint "uv installation failed.\n" "cred"
+        fi
+    fi
+}
+
+install_py() {
+    pprint "\n\nInstalling Python dependencies...\n"
+    if uv sync --frozen -q; then
+        pprint "Done.\n" "cgreen"
+    else
+        pprint "Failed (continuing...)\n" "cred"
+    fi
+}
+
+save_env_vars() {
+    pprint "\n\nProcessing your variables..." "cgreen"
+    [ -f .env ] && rm .env
+    cat >.env <<EOF
+API_ID=$1
+API_HASH=$2
+BOT_TOKEN=$3
+MONGO_URL=$4
+LOGGER_ID=$5
+SESSION=$6
+OWNER_ID=$7
+EOF
+}
+
+
+pprint "Welcome to the AnonXMusic Installation Setup\n\n" "cmagenta"
+
+update
+install_pkgs python3 python3-venv ffmpeg curl unzip
+install_uv || exit 1
+install_deno
+install_py
+
+pprint "\nAnonXMusic Installation Completed.\n" "cgreen"
+
+pprint "\nEnter Your Values Below\n\n\n" "cmagenta"
+read -rp "API ID: " api_id
+read -rp "API HASH: " api_hash
+read -rp "BOT TOKEN: " bot_token
+read -rp "OWNER ID: " ownid
+read -rp "MONGO URL: " mongo_db
+read -rp "LOG GROUP ID: " logger
+read -rp "STRING SESSION: " string_session
+
+save_env_vars "$api_id" "$api_hash" "$bot_token" "$mongo_db" "$logger" "$string_session" "$ownid"
+
+pprint "\nSetup complete! Start the bot using:\n\n  bash start\n\n" "cgreen"

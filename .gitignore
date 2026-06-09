@@ -1,0 +1,13 @@
+.env
+.cache
+*.txt
+.idea
+.DS_Store
+.venv/
+venv/
+cache/
+downloads/
+__pycache__/
+anony/cookies/*.txt
+*.session
+*.session-journal
