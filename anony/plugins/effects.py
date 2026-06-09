@@ -27,9 +27,9 @@ async def audio_effects(_, m: types.Message):
 
     command = m.command[0].lower()
     if command == "bass":
-        media.filter = "bass=g=10,aresample=48000"
+        media.filter = "bass=g=15"
     elif command == "echo":
-        media.filter = "aecho=0.8:0.88:60:0.4,aresample=48000"
+        media.filter = "aecho=0.8:0.88:60:0.4"
     elif command == "slowed":
         media.filter = "asetrate=48000*0.8,aresample=48000,aecho=0.8:0.88:60:0.4"
     elif command == "nightcore":

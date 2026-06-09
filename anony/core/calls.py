@@ -86,7 +86,7 @@ class TgCall(PyTgCalls):
 
         ffmpeg_params = (
             (f"-ss {seek_time} " if seek_time > 1 else "")
-            + (f"-af \"{media.filter}\" " if media.filter else "")
+            + (f"-af {media.filter} " if media.filter else "")
             + ("-vn" if not media.video else "")
         ).strip()
 
@@ -106,8 +106,10 @@ class TgCall(PyTgCalls):
         try:
             if await db.get_call(chat_id):
                 try:
+                    logger.info(f"Changing stream for {chat_id} with params: {ffmpeg_params}")
                     await client.change_stream(chat_id, stream)
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Error in change_stream: {e}")
                     await client.play(chat_id, stream)
             else:
                 await client.play(chat_id, stream)
