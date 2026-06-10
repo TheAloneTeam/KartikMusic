@@ -9,7 +9,7 @@ from anony import config, logger
 
 
 class Userbot(Client):
-    def __init__(self):
+    def __init__(self, session: str = None):
         """
         Initializes the userbot with multiple clients.
 
@@ -17,20 +17,30 @@ class Userbot(Client):
         Each client is assigned a unique name based on the key in the `clients` dictionary.
         """
         self.clients = []
+        if session:
+            self.one = Client(
+                name="AnonyClone",
+                api_id=config.API_ID,
+                api_hash=config.API_HASH,
+                session_string=session,
+            )
+            return
+
         clients = {"one": "SESSION1", "two": "SESSION2", "three": "SESSION3"}
         for key, string_key in clients.items():
             name = f"AnonyUB{key[-1]}"
             session = getattr(config, string_key)
-            setattr(
-                self,
-                key,
-                Client(
-                    name=name,
-                    api_id=config.API_ID,
-                    api_hash=config.API_HASH,
-                    session_string=session,
-                ),
-            )
+            if session:
+                setattr(
+                    self,
+                    key,
+                    Client(
+                        name=name,
+                        api_id=config.API_ID,
+                        api_hash=config.API_HASH,
+                        session_string=session,
+                    ),
+                )
 
     async def boot_client(self, num: int, ub: Client):
         """
@@ -68,21 +78,21 @@ class Userbot(Client):
         """
         Asynchronously starts the assistants.
         """
-        if config.SESSION1:
+        if hasattr(self, "one"):
             await self.boot_client(1, self.one)
-        if config.SESSION2:
+        if hasattr(self, "two"):
             await self.boot_client(2, self.two)
-        if config.SESSION3:
+        if hasattr(self, "three"):
             await self.boot_client(3, self.three)
 
     async def exit(self):
         """
         Asynchronously stops the assistants.
         """
-        if config.SESSION1:
+        if hasattr(self, "one"):
             await self.one.stop()
-        if config.SESSION2:
+        if hasattr(self, "two"):
             await self.two.stop()
-        if config.SESSION3:
+        if hasattr(self, "three"):
             await self.three.stop()
         logger.info("Assistants stopped.")

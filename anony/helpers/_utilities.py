@@ -64,7 +64,8 @@ class Utilities:
         return None
 
 
-    async def extract_user(self, msg: types.Message) -> types.User | None:
+    async def extract_user(self, msg: types.Message, client: app = None) -> types.User | None:
+        _bot = client or app
         if msg.reply_to_message:
             return msg.reply_to_message.from_user
 
@@ -76,9 +77,9 @@ class Utilities:
         if msg.text:
             try:
                 if m := re.search(r"@(\w{5,32})", msg.text):
-                    return await app.get_users(m.group(0))
+                    return await _bot.get_users(m.group(0))
                 if m := re.search(r"\b\d{6,15}\b", msg.text):
-                    return await app.get_users(int(m.group(0)))
+                    return await _bot.get_users(int(m.group(0)))
             except Exception:
                 pass
 
@@ -91,11 +92,13 @@ class Utilities:
         link: str,
         title: str,
         duration: str,
+        client: app = None,
     ) -> None:
-        if m.chat.id == app.logger:
+        _bot = client or app
+        if m.chat.id == _bot.logger:
             return
         _text = m.lang["play_log"].format(
-            app.name,
+            _bot.name,
             m.chat.id,
             m.chat.title,
             m.from_user.id,
@@ -104,13 +107,14 @@ class Utilities:
             title,
             duration,
         )
-        await app.send_message(chat_id=app.logger, text=_text)
+        await _bot.send_message(chat_id=_bot.logger, text=_text)
 
-    async def send_log(self, m: types.Message, chat: bool = False) -> None:
+    async def send_log(self, m: types.Message, chat: bool = False, client: app = None) -> None:
+        _bot = client or app
         if chat:
             user = m.from_user
-            return await app.send_message(
-                chat_id=app.logger,
+            return await _bot.send_message(
+                chat_id=_bot.logger,
                 text=m.lang["log_chat"].format(
                     m.chat.id,
                     m.chat.title,
@@ -119,8 +123,8 @@ class Utilities:
                 ),
             )
 
-        await app.send_message(
-            chat_id=app.logger,
+        await _bot.send_message(
+            chat_id=_bot.logger,
             text=m.lang["log_user"].format(
                 m.from_user.id,
                 f"@{m.from_user.username}",

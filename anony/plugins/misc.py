@@ -8,13 +8,13 @@ import asyncio
 
 from pyrogram import enums, errors, filters, types
 
-from anony import anon, app, config, db, lang, queue, tasks, userbot, yt
+from anony import Bot, anon, app, config, db, lang, queue, tasks, userbot, yt
 from anony.helpers import buttons
 
 
-@app.on_message(filters.video_chat_started, group=19)
-@app.on_message(filters.video_chat_ended, group=20)
-async def _watcher_vc(_, m: types.Message):
+@Bot.on_message(filters.video_chat_started, group=19)
+@Bot.on_message(filters.video_chat_ended, group=20)
+async def _watcher_vc(client, m: types.Message):
     await anon.stop(m.chat.id)
 
 
@@ -28,7 +28,7 @@ async def auto_leave():
                                 enums.ChatType.GROUP, enums.ChatType.SUPERGROUP,
                             ]][-20:]
                 for chat in chats:
-                    if chat in [app.logger, -1001686672798, -1001549206010]:
+                    if chat in [client.logger, -1001686672798, -1001549206010]:
                         continue
                     if chat in db.active_calls:
                         continue
@@ -87,7 +87,7 @@ async def update_timer(length=10, sleep=12):
                 if not timer and not remove:
                     continue
 
-                await app.edit_message_reply_markup(
+                await client.edit_message_reply_markup(
                     chat_id=chat_id,
                     message_id=message_id,
                     reply_markup=buttons.controls(
@@ -104,6 +104,7 @@ async def vc_watcher(sleep=15):
     while True:
         await asyncio.sleep(sleep)
         for chat_id in list(db.active_calls):
+            # This logic needs to be bot-aware, for now we check main app
             client = await db.get_assistant(chat_id)
             media = queue.get_current(chat_id)
             if not media:
@@ -112,7 +113,7 @@ async def vc_watcher(sleep=15):
             if len(participants) < 2 and media.time > 30:
                 _lang = await lang.get_lang(chat_id)
                 try:
-                    sent = await app.edit_message_reply_markup(
+                    sent = await client.edit_message_reply_markup(
                         chat_id=chat_id,
                         message_id=media.message_id,
                         reply_markup=buttons.controls(

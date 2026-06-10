@@ -12,14 +12,14 @@ from anony.helpers import utils
 
 
 def checkUB(play):
-    async def wrapper(_, m: types.Message):
+    async def wrapper(client, m: types.Message):
         if not m.from_user:
             return await m.reply_text(m.lang["play_user_invalid"])
 
         chat_id = m.chat.id
         if m.chat.type != enums.ChatType.SUPERGROUP:
             await m.reply_text(m.lang["play_chat_invalid"])
-            return await app.leave_chat(chat_id)
+            return await client.leave_chat(chat_id)
 
         if not m.reply_to_message and (
             len(m.command) < 2 or (len(m.command) == 2 and m.command[1] == "-f")
@@ -44,29 +44,29 @@ def checkUB(play):
             if (
                 m.from_user.id not in adminlist
                 and not await db.is_auth(chat_id, m.from_user.id)
-                and not m.from_user.id in app.sudoers
+                and not m.from_user.id in client.sudoers
             ):
                 return await m.reply_text(m.lang["play_admin"])
 
         if chat_id not in db.active_calls:
-            client = await db.get_client(chat_id)
+            _assistant = await db.get_client(chat_id)
             try:
-                member = await app.get_chat_member(chat_id, client.id)
+                member = await client.get_chat_member(chat_id, _assistant.id)
                 if member.status in [
                     enums.ChatMemberStatus.BANNED,
                     enums.ChatMemberStatus.RESTRICTED,
                 ]:
                     try:
-                        await app.unban_chat_member(
-                            chat_id=chat_id, user_id=client.id
+                        await client.unban_chat_member(
+                            chat_id=chat_id, user_id=_assistant.id
                         )
                     except Exception:
                         return await m.reply_text(
                             m.lang["play_banned"].format(
-                                app.name,
-                                client.id,
-                                client.mention,
-                                f"@{client.username}" if client.username else None,
+                                client.name,
+                                _assistant.id,
+                                _assistant.mention,
+                                f"@{_assistant.username}" if _assistant.username else None,
                             )
                         )
             except errors.ChatAdminRequired:
@@ -75,14 +75,14 @@ def checkUB(play):
                 if m.chat.username:
                     invite_link = m.chat.username
                     try:
-                        await client.resolve_peer(invite_link)
+                        await _assistant.resolve_peer(invite_link)
                     except Exception:
                         pass
                 else:
                     try:
-                        invite_link = (await app.get_chat(chat_id)).invite_link
+                        invite_link = (await client.get_chat(chat_id)).invite_link
                         if not invite_link:
-                            invite_link = await app.export_chat_invite_link(chat_id)
+                            invite_link = await client.export_chat_invite_link(chat_id)
                     except errors.ChatAdminRequired:
                         return await m.reply_text(m.lang["admin_required"])
                     except Exception as ex:
@@ -90,16 +90,16 @@ def checkUB(play):
                             m.lang["play_invite_error"].format(type(ex).__name__)
                         )
 
-                umm = await m.reply_text(m.lang["play_invite"].format(app.name))
+                umm = await m.reply_text(m.lang["play_invite"].format(client.name))
                 await asyncio.sleep(2)
                 try:
-                    await client.join_chat(invite_link)
+                    await _assistant.join_chat(invite_link)
                 except errors.UserAlreadyParticipant:
                     pass
                 except errors.InviteRequestSent:
                     await asyncio.sleep(2)
                     try:
-                        await app.approve_chat_join_request(chat_id, client.id)
+                        await client.approve_chat_join_request(chat_id, _assistant.id)
                     except errors.HideRequesterMissing:
                         pass
                     except Exception as ex:
@@ -113,7 +113,7 @@ def checkUB(play):
                     )
 
                 await umm.delete()
-                await client.resolve_peer(chat_id)
+                await _assistant.resolve_peer(chat_id)
 
         if await db.get_cmd_delete(chat_id):
             try:
@@ -121,6 +121,6 @@ def checkUB(play):
             except Exception:
                 pass
 
-        return await play(_, m, force, m3u8, video, url)
+        return await play(client, m, force, m3u8, video, url)
 
     return wrapper

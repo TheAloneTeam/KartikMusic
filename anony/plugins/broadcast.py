@@ -8,14 +8,16 @@ import asyncio
 
 from pyrogram import errors, filters, types
 
-from anony import app, db, lang
+from anony import Bot, app, db, lang
 
 
 broadcasting = asyncio.Lock()
 
-@app.on_message(filters.command(["broadcast"]) & app.sudoers)
+@Bot.on_message(filters.command(["broadcast"]))
 @lang.language()
-async def _broadcast(_, message: types.Message):
+async def _broadcast(client, message: types.Message):
+    if m.from_user.id not in client.sudoers:
+        return
     if not message.reply_to_message:
         return await message.reply_text(message.lang["gcast_usage"])
 

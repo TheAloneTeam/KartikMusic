@@ -5,22 +5,22 @@
 
 from pyrogram import filters, types
 
-from anony import app, db, lang
+from anony import Bot, app, db, lang
 from anony.helpers import admin_check, buttons
 
 
-@app.on_message(filters.command(["lang", "language"]) & ~app.bl_users)
+@Bot.on_message(filters.command(["lang", "language"]) & ~filters.bl_users)
 @lang.language()
-async def _lang(_, m: types.Message):
+async def _lang(client, m: types.Message):
     current = await db.get_lang(m.chat.id)
     keyboard = buttons.lang_markup(current)
     await m.reply_text(m.lang["lang_choose"], reply_markup=keyboard)
 
 
-@app.on_callback_query(filters.regex(r"^lang(?:_change|uage)") & ~app.bl_users)
+@Bot.on_callback_query(filters.regex(r"^lang(?:_change|uage)") & ~filters.bl_users)
 @lang.language()
 @admin_check
-async def _lang_cb(_, query: types.CallbackQuery):
+async def _lang_cb(client, query: types.CallbackQuery):
     data = query.data.split()
     if data[0] == "language":
         current = await db.get_lang(query.message.chat.id)

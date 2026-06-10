@@ -10,26 +10,30 @@ import asyncio
 
 from pyrogram import filters, types
 
-from anony import app, db, lang, stop
+from anony import Bot, app, db, lang, stop
 
 
-@app.on_message(filters.command(["logs"]) & app.sudoers)
+@Bot.on_message(filters.command(["logs"]))
 @lang.language()
-async def _logs(_, m: types.Message):
+async def _logs(client, m: types.Message):
+    if m.from_user.id not in client.sudoers:
+        return
     sent = await m.reply_text(m.lang["log_fetch"])
     if not os.path.exists("log.txt"):
         return await sent.edit_text(m.lang["log_not_found"])
     await sent.edit_media(
         media=types.InputMediaDocument(
             media="log.txt",
-            caption=m.lang["log_sent"].format(app.name),
+            caption=m.lang["log_sent"].format(client.name),
         )
     )
 
 
-@app.on_message(filters.command(["logger"]) & app.sudoers)
+@Bot.on_message(filters.command(["logger"]))
 @lang.language()
-async def _logger(_, m: types.Message):
+async def _logger(client, m: types.Message):
+    if m.from_user.id not in client.sudoers:
+        return
     if len(m.command) < 2:
         return await m.reply_text(m.lang["logger_usage"].format(m.command[0]))
     if m.command[1] not in ("on", "off"):
@@ -43,9 +47,13 @@ async def _logger(_, m: types.Message):
         await m.reply_text(m.lang["logger_off"])
 
 
-@app.on_message(filters.command(["restart"]) & app.sudoers)
+@Bot.on_message(filters.command(["restart"]))
 @lang.language()
-async def _restart(_, m: types.Message):
+async def _restart(client, m: types.Message):
+    if m.from_user.id not in client.sudoers:
+        return
+    if client.id != app.id:
+        return await m.reply_text("Only the main bot can be restarted.")
     sent = await m.reply_text(m.lang["restarting"])
 
     for directory in ["cache", "downloads"]:

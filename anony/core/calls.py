@@ -23,9 +23,10 @@ class TgCall(PyTgCalls):
     def __init__(self):
         self.clients = []
         self.restarting = defaultdict(int)
+        self.bots = {}
 
-    async def pause(self, chat_id: int) -> bool:
-        client = await db.get_assistant(chat_id)
+    async def pause(self, chat_id: int, bot_id: int = None, client_bot: Bot = None) -> bool:
+        client = await db.get_assistant(chat_id, bot_id=bot_id, client_bot=client_bot)
         await db.playing(chat_id, paused=True)
 
         media = queue.get_current(chat_id)
@@ -35,8 +36,8 @@ class TgCall(PyTgCalls):
 
         return await client.pause(chat_id)
 
-    async def resume(self, chat_id: int) -> bool:
-        client = await db.get_assistant(chat_id)
+    async def resume(self, chat_id: int, bot_id: int = None, client_bot: Bot = None) -> bool:
+        client = await db.get_assistant(chat_id, bot_id=bot_id, client_bot=client_bot)
         await db.playing(chat_id, paused=False)
 
         media = queue.get_current(chat_id)
@@ -45,12 +46,13 @@ class TgCall(PyTgCalls):
 
         return await client.resume(chat_id)
 
-    async def stop(self, chat_id: int) -> None:
-        client = await db.get_assistant(chat_id)
+    async def stop(self, chat_id: int, client_bot: Bot = None) -> None:
+        _bot = client_bot or app
+        client = await db.get_assistant(chat_id, bot_id=_bot.id, client_bot=_bot)
         media = queue.get_current(chat_id)
         if media and media.message_id:
             try:
-                await app.delete_messages(chat_id, media.message_id)
+                await _bot.delete_messages(chat_id, media.message_id)
             except Exception:
                 pass
         queue.clear(chat_id)
@@ -69,11 +71,14 @@ class TgCall(PyTgCalls):
         message: Message,
         media: Media | Track,
         seek_time: int = 0,
+        client: Bot = None,
     ) -> None:
         self.restarting[chat_id] += 1
         if await db.get_call(chat_id):
             await asyncio.sleep(0.5)
-        client = await db.get_assistant(chat_id)
+
+        _bot = client or app
+        client = await db.get_assistant(chat_id, bot_id=_bot.id, client_bot=_bot)
         _lang = await lang.get_lang(chat_id)
         _thumb_mode = await db.get_thumb_mode(chat_id)
         _thumb = (
@@ -151,14 +156,14 @@ class TgCall(PyTgCalls):
                     except Exception:
                         pass
                     if _thumb:
-                        sent = await app.send_photo(
+                        sent = await _bot.send_photo(
                             chat_id=chat_id,
                             photo=_thumb,
                             caption=text,
                             reply_markup=keyboard,
                         )
                     else:
-                        sent = await app.send_message(
+                        sent = await _bot.send_message(
                             chat_id=chat_id,
                             text=text,
                             reply_markup=keyboard,
@@ -184,23 +189,25 @@ class TgCall(PyTgCalls):
             self.restarting[chat_id] -= 1
 
 
-    async def replay(self, chat_id: int) -> None:
+    async def replay(self, chat_id: int, client_bot: Bot = None) -> None:
+        _bot = client_bot or app
         if not await db.get_call(chat_id):
             return
 
         media = queue.get_current(chat_id)
         if media and media.message_id:
             try:
-                await app.delete_messages(chat_id, media.message_id)
+                await _bot.delete_messages(chat_id, media.message_id)
             except Exception:
                 pass
         _lang = await lang.get_lang(chat_id)
-        msg = await app.send_message(chat_id=chat_id, text=_lang["play_again"])
+        msg = await _bot.send_message(chat_id=chat_id, text=_lang["play_again"])
         media.message_id = msg.id
-        await self.play_media(chat_id, msg, media)
+        await self.play_media(chat_id, msg, media, client=_bot)
 
 
-    async def play_next(self, chat_id: int) -> None:
+    async def play_next(self, chat_id: int, client_bot: Bot = None) -> None:
+        _bot = client_bot or app
         if loop := await db.get_loop(chat_id):
             await db.set_loop(chat_id, loop - 1)
             return await self.replay(chat_id)
@@ -208,7 +215,7 @@ class TgCall(PyTgCalls):
         current = queue.get_current(chat_id)
         if current and current.message_id:
             try:
-                await app.delete_messages(chat_id, current.message_id)
+                await _bot.delete_messages(chat_id, current.message_id)
             except Exception:
                 pass
 
@@ -225,17 +232,17 @@ class TgCall(PyTgCalls):
                     if media:
                         queue.add(chat_id, media)
                     else:
-                        return await self.stop(chat_id)
+                        return await self.stop(chat_id, client_bot=_bot)
                 else:
-                    return await self.stop(chat_id)
+                    return await self.stop(chat_id, client_bot=_bot)
             else:
-                return await self.stop(chat_id)
+                return await self.stop(chat_id, client_bot=_bot)
 
         _lang = await lang.get_lang(chat_id)
         msg = None
         if media.message_id:
             try:
-                msg = await app.get_messages(chat_id, media.message_id)
+                msg = await _bot.get_messages(chat_id, media.message_id)
                 if not msg or not msg.id or msg.empty:
                     msg = None
                 else:
@@ -247,12 +254,12 @@ class TgCall(PyTgCalls):
                 msg = None
 
         if not msg:
-            msg = await app.send_message(chat_id=chat_id, text=_lang["play_next"])
+            msg = await _bot.send_message(chat_id=chat_id, text=_lang["play_next"])
 
         if not media.file_path:
             media.file_path = await yt.download(media.id, video=media.video)
             if not media.file_path:
-                await self.play_next(chat_id)
+                await self.play_next(chat_id, client_bot=_bot)
                 if msg:
                     try:
                         return await msg.edit_text(
@@ -263,7 +270,7 @@ class TgCall(PyTgCalls):
                 return
 
         media.message_id = msg.id
-        await self.play_media(chat_id, msg, media)
+        await self.play_media(chat_id, msg, media, client=_bot)
 
 
     async def ping(self) -> float:
@@ -271,14 +278,15 @@ class TgCall(PyTgCalls):
         return round(sum(pings) / len(pings), 2)
 
 
-    async def decorators(self, client: PyTgCalls) -> None:
+    async def decorators(self, client: PyTgCalls, client_bot: Bot = None) -> None:
         @client.on_update()
-        async def update_handler(_, update: types.Update) -> None:
+        async def update_handler(c: PyTgCalls, update: types.Update) -> None:
             if isinstance(update, types.StreamEnded):
                 if update.stream_type == types.StreamEnded.Type.AUDIO:
                     if self.restarting.get(update.chat_id):
                         return
-                    await self.play_next(update.chat_id)
+                    _bot = client_bot or self.bots.get(c.app.me.id)
+                    await self.play_next(update.chat_id, client_bot=_bot)
             elif isinstance(update, types.ChatUpdate):
                 if update.status in [
                     types.ChatUpdate.Status.KICKED,
@@ -296,3 +304,10 @@ class TgCall(PyTgCalls):
             self.clients.append(client)
             await self.decorators(client)
         logger.info("PyTgCalls client(s) started.")
+
+    async def boot_clone(self, ub: Userbot, bot: Bot) -> None:
+        client = PyTgCalls(ub.one, cache_duration=100)
+        await client.start()
+        self.clients.append(client)
+        self.bots[ub.one.me.id] = bot
+        await self.decorators(client, client_bot=bot)

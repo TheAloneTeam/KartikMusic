@@ -14,14 +14,16 @@ from typing import Any, Optional, Tuple
 
 from pyrogram import filters, types
 
-from anony import anon, app, config, db, lang, userbot
+from anony import Bot, anon, app, config, db, lang, userbot
 from anony.helpers import format_exception, meval
 
 
-@app.on_message(filters.command(["eval", "exec"]) & filters.user(app.owner))
-@app.on_edited_message(filters.command(["eval", "exec"]) & filters.user(app.owner))
+@Bot.on_message(filters.command(["eval", "exec"]))
+@Bot.on_edited_message(filters.command(["eval", "exec"]))
 @lang.language()
-async def eval_handler(_, message: types.Message):
+async def eval_handler(client, message: types.Message):
+    if message.from_user.id != client.owner:
+        return
     if len(message.command) < 2:
         return await message.reply_text(message.lang["eval_inp"])
 

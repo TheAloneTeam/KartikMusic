@@ -35,10 +35,23 @@ async def main():
     if config.COOKIES_URL:
         await yt.save_cookies(config.COOKIES_URL)
 
-    sudoers = await db.get_sudoers()
-    app.sudoers.update(sudoers)
-    app.bl_users.update(await db.get_blacklisted())
-    logger.info(f"Loaded {len(app.sudoers)} sudo users.")
+    # Boot clones
+    clones = await db.get_clones()
+    for clone in clones:
+        try:
+            from anony.core.bot import Bot as BotClass
+            from anony.core.userbot import Userbot as UserbotClass
+
+            clone_bot = BotClass(bot_token=clone["bot_token"], owner_id=clone["owner_id"])
+            await clone_bot.boot()
+
+            clone_userbot = UserbotClass(session=clone["session"])
+            await clone_userbot.boot()
+
+            await anon.boot_clone(clone_userbot, clone_bot)
+            logger.info(f"Clone @{clone_bot.username} booted successfully.")
+        except Exception as e:
+            logger.error(f"Failed to boot clone: {e}")
 
     await idle()
     asyncio.create_task(stop())

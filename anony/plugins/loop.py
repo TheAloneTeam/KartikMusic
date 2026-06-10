@@ -5,14 +5,14 @@
 
 from pyrogram import filters, types
 
-from anony import app, db, lang
+from anony import Bot, app, db, lang
 from anony.helpers import can_manage_vc
 
 
-@app.on_message(filters.command(["loop"]) & filters.group & ~app.bl_users)
+@Bot.on_message(filters.command(["loop"]) & filters.group & ~filters.bl_users)
 @lang.language()
 @can_manage_vc
-async def _loop(_, m: types.Message):
+async def _loop(client, m: types.Message):
     if not await db.get_call(m.chat.id):
         return await m.reply_text(m.lang["not_playing"])
 

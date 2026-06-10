@@ -46,6 +46,8 @@ class MongoDB:
         self.users = []
         self.usersdb = self.db.users
 
+        self.clonesdb = self.db.clones
+
     async def connect(self) -> None:
         """Check if we can connect to the database.
 
@@ -64,6 +66,13 @@ class MongoDB:
         """Close the connection to the database."""
         await self.mongo.close()
         logger.info("Database connection closed.")
+
+    # CLONE DATA HELPERS
+    async def get_clone_assistant(self, bot_id: int):
+        clone = await self.clonesdb.find_one({"bot_token": {"$regex": f"^{bot_id}:"}})
+        if clone:
+            return Userbot(session=clone["session"])
+        return None
 
     # CACHE
     async def get_call(self, chat_id: int) -> bool:
@@ -130,8 +139,19 @@ class MongoDB:
         self.assistant[chat_id] = num
         return num
 
-    async def get_assistant(self, chat_id: int):
-        from anony import anon
+    async def get_assistant(self, chat_id: int, bot_id: int = None, client_bot: Bot = None):
+        from anony import anon, app
+
+        _bot_id = bot_id or (client_bot.id if client_bot else app.id)
+        if _bot_id != app.id:
+            _bot = client_bot or app # Fallback, though ideally we want the right bot
+            if _bot_id in _bot.clones_assistants:
+                return _bot.clones_assistants[_bot_id].one
+            clone_ub = await self.get_clone_assistant(_bot_id)
+            if clone_ub:
+                await clone_ub.one.start()
+                _bot.clones_assistants[_bot_id] = clone_ub
+                return clone_ub.one
 
         if chat_id not in self.assistant:
             doc = await self.assistantdb.find_one({"_id": chat_id})
@@ -143,7 +163,19 @@ class MongoDB:
 
         return anon.clients[self.assistant[chat_id] - 1]
 
-    async def get_client(self, chat_id: int):
+    async def get_client(self, chat_id: int, bot_id: int = None, client_bot: Bot = None):
+        from anony import app
+        _bot_id = bot_id or (client_bot.id if client_bot else app.id)
+        if _bot_id != app.id:
+            _bot = client_bot or app
+            if _bot_id in _bot.clones_assistants:
+                return _bot.clones_assistants[_bot_id].one
+            clone_ub = await self.get_clone_assistant(_bot_id)
+            if clone_ub:
+                await clone_ub.one.start()
+                _bot.clones_assistants[_bot_id] = clone_ub
+                return clone_ub.one
+
         if chat_id not in self.assistant:
             await self.get_assistant(chat_id)
 
@@ -155,39 +187,35 @@ class MongoDB:
         return {1: userbot.one, 2: userbot.two, 3: userbot.three}.get(num)
 
     # BLACKLIST METHODS
-    async def add_blacklist(self, chat_id: int) -> None:
+    async def add_blacklist(self, chat_id: int, bot_id: int) -> None:
         if str(chat_id).startswith("-"):
-            self.blacklisted.append(chat_id)
             return await self.cache.update_one(
-                {"_id": "bl_chats"},
+                {"_id": f"bl_chats_{bot_id}"},
                 {"$addToSet": {"chat_ids": chat_id}},
                 upsert=True,
             )
         await self.cache.update_one(
-            {"_id": "bl_users"},
+            {"_id": f"bl_users_{bot_id}"},
             {"$addToSet": {"user_ids": chat_id}},
             upsert=True,
         )
 
-    async def del_blacklist(self, chat_id: int) -> None:
+    async def del_blacklist(self, chat_id: int, bot_id: int) -> None:
         if str(chat_id).startswith("-"):
-            self.blacklisted.remove(chat_id)
             return await self.cache.update_one(
-                {"_id": "bl_chats"},
+                {"_id": f"bl_chats_{bot_id}"},
                 {"$pull": {"chat_ids": chat_id}},
             )
         await self.cache.update_one(
-            {"_id": "bl_users"},
+            {"_id": f"bl_users_{bot_id}"},
             {"$pull": {"user_ids": chat_id}},
         )
 
-    async def get_blacklisted(self, chat: bool = False) -> list[int]:
+    async def get_blacklisted(self, bot_id: int, chat: bool = False) -> list[int]:
         if chat:
-            if not self.blacklisted:
-                doc = await self.cache.find_one({"_id": "bl_chats"})
-                self.blacklisted.extend(doc.get("chat_ids", []) if doc else [])
-            return self.blacklisted
-        doc = await self.cache.find_one({"_id": "bl_users"})
+            doc = await self.cache.find_one({"_id": f"bl_chats_{bot_id}"})
+            return doc.get("chat_ids", []) if doc else []
+        doc = await self.cache.find_one({"_id": f"bl_users_{bot_id}"})
         return doc.get("user_ids", []) if doc else []
 
     # CHAT METHODS
@@ -323,18 +351,18 @@ class MongoDB:
         )
 
     # SUDO METHODS
-    async def add_sudo(self, user_id: int) -> None:
+    async def add_sudo(self, user_id: int, bot_id: int) -> None:
         await self.cache.update_one(
-            {"_id": "sudoers"}, {"$addToSet": {"user_ids": user_id}}, upsert=True
+            {"_id": f"sudoers_{bot_id}"}, {"$addToSet": {"user_ids": user_id}}, upsert=True
         )
 
-    async def del_sudo(self, user_id: int) -> None:
+    async def del_sudo(self, user_id: int, bot_id: int) -> None:
         await self.cache.update_one(
-            {"_id": "sudoers"}, {"$pull": {"user_ids": user_id}}
+            {"_id": f"sudoers_{bot_id}"}, {"$pull": {"user_ids": user_id}}
         )
 
-    async def get_sudoers(self) -> list[int]:
-        doc = await self.cache.find_one({"_id": "sudoers"})
+    async def get_sudoers(self, bot_id: int) -> list[int]:
+        doc = await self.cache.find_one({"_id": f"sudoers_{bot_id}"})
         return doc.get("user_ids", []) if doc else []
 
     # USER METHODS
@@ -356,6 +384,20 @@ class MongoDB:
             self.users.extend([user["_id"] async for user in self.usersdb.find()])
         return self.users
 
+    # CLONE METHODS
+    async def add_clone(self, bot_token: str, session: str, owner_id: int) -> None:
+        await self.clonesdb.update_one(
+            {"bot_token": bot_token},
+            {"$set": {"session": session, "owner_id": owner_id}},
+            upsert=True,
+        )
+
+    async def rm_clone(self, bot_token: str) -> bool:
+        res = await self.clonesdb.delete_one({"bot_token": bot_token})
+        return res.deleted_count > 0
+
+    async def get_clones(self) -> list[dict]:
+        return [clone async for clone in self.clonesdb.find()]
 
     async def migrate_coll(self) -> None:
         logger.info("Migrating users and chats from old collections...")
@@ -408,6 +450,6 @@ class MongoDB:
 
         await self.get_chats()
         await self.get_users()
-        await self.get_blacklisted(True)
+        # await self.get_blacklisted(True) # Moved to bot-specific loading
         await self.get_logger()
         logger.info("Database cache loaded.")
