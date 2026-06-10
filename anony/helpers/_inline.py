@@ -23,6 +23,9 @@ class Inline:
         status: str = None,
         timer: str = None,
         remove: bool = False,
+        more: bool = False,
+        autoplay: bool = None,
+        thumb: bool = None,
     ) -> types.InlineKeyboardMarkup:
         keyboard = []
         if status:
@@ -35,24 +38,44 @@ class Inline:
             )
 
         if not remove:
-            keyboard.append(
-                [
-                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}"),
-                    self.ikb(text="II", callback_data=f"controls pause {chat_id}"),
-                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}"),
-                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}"),
-                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}"),
-                ]
-            )
-            keyboard.append(
-                [
-                    self.ikb(text="-20s", callback_data=f"controls seek {chat_id} -20"),
-                    self.ikb(text="+20s", callback_data=f"controls seek {chat_id} 20"),
-                ]
-            )
-            keyboard.append(
-                [self.ikb(text="Close ✘", callback_data=f"controls close {chat_id}")]
-            )
+            if more:
+                _on = "Enabled ✅"
+                _off = "Disabled ❌"
+                keyboard.append(
+                    [
+                        self.ikb(text="Autoplay", callback_data=f"controls status {chat_id}"),
+                        self.ikb(text=_on if autoplay else _off, callback_data=f"controls cautoplay {chat_id}"),
+                    ]
+                )
+                keyboard.append(
+                    [
+                        self.ikb(text="Thumbnail", callback_data=f"controls status {chat_id}"),
+                        self.ikb(text=_on if thumb else _off, callback_data=f"controls cthumb {chat_id}"),
+                    ]
+                )
+                keyboard.append(
+                    [self.ikb(text="Back ⬅️", callback_data=f"controls back {chat_id}")]
+                )
+            else:
+                keyboard.append(
+                    [
+                        self.ikb(text="▷", callback_data=f"controls resume {chat_id}"),
+                        self.ikb(text="II", callback_data=f"controls pause {chat_id}"),
+                        self.ikb(text="⥁", callback_data=f"controls replay {chat_id}"),
+                        self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}"),
+                        self.ikb(text="▢", callback_data=f"controls stop {chat_id}"),
+                    ]
+                )
+                keyboard.append(
+                    [
+                        self.ikb(text="-20s", callback_data=f"controls seek {chat_id} -20"),
+                        self.ikb(text="More ➜", callback_data=f"controls more {chat_id}"),
+                        self.ikb(text="+20s", callback_data=f"controls seek {chat_id} 20"),
+                    ]
+                )
+                keyboard.append(
+                    [self.ikb(text="Close ✘", callback_data=f"controls close {chat_id}")]
+                )
         return self.ikm(keyboard)
 
     def help_markup(

@@ -135,6 +135,28 @@ async def _controls(_, query: types.CallbackQuery):
         except Exception:
             return
 
+    elif action in ["more", "cautoplay", "cthumb", "back"]:
+        if action == "cautoplay":
+            autoplay = not await db.get_autoplay(chat_id)
+            await db.set_autoplay(chat_id, autoplay)
+        elif action == "cthumb":
+            thumb = not await db.get_thumb_mode(chat_id)
+            await db.set_thumb_mode(chat_id, thumb)
+
+        autoplay = await db.get_autoplay(chat_id)
+        thumb = await db.get_thumb_mode(chat_id)
+
+        keyboard = buttons.controls(
+            chat_id,
+            more=action != "back",
+            autoplay=autoplay,
+            thumb=thumb,
+        )
+        try:
+            return await query.edit_message_reply_markup(reply_markup=keyboard)
+        except Exception:
+            return
+
     try:
         if action in ["skip", "replay", "stop"]:
             await query.message.reply_text(reply, quote=False)
