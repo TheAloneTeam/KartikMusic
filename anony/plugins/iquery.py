@@ -6,12 +6,12 @@
 from py_yt import VideosSearch
 from pyrogram import types
 
-from anony import app
+from anony import Bot, app
 from anony.helpers import buttons
 
 
-@app.on_inline_query(~app.bl_users)
-async def inline_query_handler(_, query: types.InlineQuery):
+@Bot.on_inline_query(~filters.bl_users)
+async def inline_query_handler(client, query: types.InlineQuery):
     text = query.query.strip().lower()
     if not text:
         return
@@ -38,7 +38,7 @@ async def inline_query_handler(_, query: types.InlineQuery):
                 f"<b>Views:</b> <code>{views}</code>\n"
                 f"<b>Channel:</b> <a href='{channellink}'>{channel}</a>\n"
                 f"<b>Published:</b> {published}\n\n"
-                f"<u><i>Fetched by {app.name}</i></u>"
+                f"<u><i>Fetched by {client.name}</i></u>"
             )
 
             answers.append(
@@ -52,6 +52,6 @@ async def inline_query_handler(_, query: types.InlineQuery):
             )
 
         if answers:
-            await app.answer_inline_query(query.id, results=answers, cache_time=5)
+            await client.answer_inline_query(query.id, results=answers, cache_time=5)
     except Exception:
         pass

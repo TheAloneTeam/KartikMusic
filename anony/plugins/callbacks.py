@@ -7,21 +7,21 @@ import re
 import time
 from pyrogram import enums, errors, filters, types
 
-from anony import anon, app, db, lang, queue, tg, yt
+from anony import Bot, anon, app, db, lang, queue, tg, yt
 from anony.helpers import admin_check, buttons, can_manage_vc
 
 
-@app.on_callback_query(filters.regex("cancel_dl") & ~app.bl_users)
+@Bot.on_callback_query(filters.regex("cancel_dl") & ~filters.bl_users)
 @lang.language()
-async def cancel_dl(_, query: types.CallbackQuery):
+async def cancel_dl(client, query: types.CallbackQuery):
     await query.answer()
     await tg.cancel(query)
 
 
-@app.on_callback_query(filters.regex("controls") & ~app.bl_users)
+@Bot.on_callback_query(filters.regex("controls") & ~filters.bl_users)
 @lang.language()
 @can_manage_vc
-async def _controls(_, query: types.CallbackQuery):
+async def _controls(client, query: types.CallbackQuery):
     args = query.data.split()
     action, chat_id = args[1], int(args[2])
     qaction = len(args) == 4
@@ -46,7 +46,7 @@ async def _controls(_, query: types.CallbackQuery):
             return await query.answer(
                 query.lang["play_already_paused"], show_alert=True
             )
-        await anon.pause(chat_id)
+        await anon.pause(chat_id, client_bot=client)
         if qaction:
             return await query.edit_message_reply_markup(
                 reply_markup=buttons.queue_markup(chat_id, query.lang["paused"], False)
@@ -57,7 +57,7 @@ async def _controls(_, query: types.CallbackQuery):
     elif action == "resume":
         if await db.playing(chat_id):
             return await query.answer(query.lang["play_not_paused"], show_alert=True)
-        await anon.resume(chat_id)
+        await anon.resume(chat_id, client_bot=client)
         if qaction:
             return await query.edit_message_reply_markup(
                 reply_markup=buttons.queue_markup(chat_id, query.lang["playing"], True)
@@ -65,7 +65,7 @@ async def _controls(_, query: types.CallbackQuery):
         reply = query.lang["play_resumed"].format(user)
 
     elif action == "skip":
-        await anon.play_next(chat_id)
+        await anon.play_next(chat_id, client_bot=client)
         status = query.lang["skipped"]
         reply = query.lang["play_skipped"].format(user)
 
@@ -77,7 +77,7 @@ async def _controls(_, query: types.CallbackQuery):
         current = queue.get_current(chat_id)
         if current and current.message_id:
             try:
-                await app.delete_messages(chat_id, current.message_id)
+                await client.delete_messages(chat_id, current.message_id)
             except Exception:
                 pass
 
@@ -88,17 +88,17 @@ async def _controls(_, query: types.CallbackQuery):
             media.file_path = await yt.download(media.id, video=media.video)
 
         media.message_id = msg.id
-        return await anon.play_media(chat_id, msg, media)
+        return await anon.play_media(chat_id, msg, media, client=client)
 
     elif action == "replay":
         media = queue.get_current(chat_id)
         media.user = user
-        await anon.replay(chat_id)
+        await anon.replay(chat_id, client_bot=client)
         status = query.lang["replayed"]
         reply = query.lang["play_replayed"].format(user)
 
     elif action == "stop":
-        await anon.stop(chat_id)
+        await anon.stop(chat_id, client_bot=client)
         status = query.lang["stopped"]
         reply = query.lang["play_stopped"].format(user)
 
@@ -123,7 +123,7 @@ async def _controls(_, query: types.CallbackQuery):
         elif new_pos + 10 > media.duration_sec:
             new_pos = media.duration_sec - 5
 
-        await anon.play_media(chat_id, query.message, media, new_pos)
+        await anon.play_media(chat_id, query.message, media, new_pos, client=client)
         media.time = new_pos
         return await query.answer(
             f"Seeked to {new_pos}s", show_alert=True
@@ -156,21 +156,21 @@ async def _controls(_, query: types.CallbackQuery):
         pass
 
 
-@app.on_callback_query(filters.regex("help") & ~app.bl_users)
+@Bot.on_callback_query(filters.regex("help") & ~filters.bl_users)
 @lang.language()
-async def _help(_, query: types.CallbackQuery):
+async def _help(client, query: types.CallbackQuery):
     data = query.data.split()
     if len(data) == 1:
         _text = query.lang["help_menu"]
-        _key = buttons.help_markup(query.lang)
+        _key = buttons.help_markup(query.lang) # We could pass client.owner but buttons.help_markup doesn't take it currently
     elif data[1] == "home":
         private = query.message.chat.type == enums.ChatType.PRIVATE
         _text = (
-            query.lang["start_pm"].format(query.from_user.first_name, app.name)
+            query.lang["start_pm"].format(query.from_user.first_name, client.name)
             if private
-            else query.lang["start_gp"].format(app.name)
+            else query.lang["start_gp"].format(client.name)
         )
-        _key = buttons.start_key(query.lang, private)
+        _key = buttons.start_key(query.lang, private, username=client.username, owner_id=client.owner)
     elif data[1] == "back":
         _text = query.lang["help_menu"]
         _key = buttons.help_markup(query.lang)
@@ -193,10 +193,10 @@ async def _help(_, query: types.CallbackQuery):
         pass
 
 
-@app.on_callback_query(filters.regex("settings") & ~app.bl_users)
+@Bot.on_callback_query(filters.regex("settings") & ~filters.bl_users)
 @lang.language()
 @admin_check
-async def _settings_cb(_, query: types.CallbackQuery):
+async def _settings_cb(client, query: types.CallbackQuery):
     cmd = query.data.split()
     if len(cmd) == 1:
         return await query.answer()

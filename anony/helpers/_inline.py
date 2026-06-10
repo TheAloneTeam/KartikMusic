@@ -180,13 +180,13 @@ class Inline:
         )
 
     def start_key(
-        self, lang: dict, private: bool = False
+        self, lang: dict, private: bool = False, username: str = None, owner_id: int = None
     ) -> types.InlineKeyboardMarkup:
         rows = [
             [
                 self.ikb(
                     text=lang["add_me"],
-                    url=f"https://t.me/{app.username}?startgroup=true",
+                    url=f"https://t.me/{username or app.username}?startgroup=true",
                 )
             ],
             [self.ikb(text=lang["help"], callback_data="help")],
@@ -200,7 +200,7 @@ class Inline:
                 [
                     self.ikb(
                         text="Owner",
-                        user_id=config.OWNER_ID,
+                        user_id=owner_id or config.OWNER_ID,
                     )
                 ]
             ]

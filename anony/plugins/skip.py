@@ -5,16 +5,16 @@
 
 from pyrogram import filters, types
 
-from anony import anon, app, db, lang
+from anony import Bot, anon, app, db, lang
 from anony.helpers import can_manage_vc
 
 
-@app.on_message(filters.command(["skip", "next"]) & filters.group & ~app.bl_users)
+@Bot.on_message(filters.command(["skip", "next"]) & filters.group & ~filters.bl_users)
 @lang.language()
 @can_manage_vc
-async def _skip(_, m: types.Message):
+async def _skip(client, m: types.Message):
     if not await db.get_call(m.chat.id):
         return await m.reply_text(m.lang["not_playing"])
 
-    await anon.play_next(m.chat.id)
+    await anon.play_next(m.chat.id, client_bot=client)
     await m.reply_text(m.lang["play_skipped"].format(m.from_user.mention))

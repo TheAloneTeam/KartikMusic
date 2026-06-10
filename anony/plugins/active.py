@@ -7,12 +7,14 @@ import os
 
 from pyrogram import filters, types
 
-from anony import app, db, lang, queue
+from anony import Bot, app, db, lang, queue
 
 
-@app.on_message(filters.command(["ac", "activevc"]) & app.sudoers)
+@Bot.on_message(filters.command(["ac", "activevc"]))
 @lang.language()
-async def _activevc(_, m: types.Message):
+async def _activevc(client, m: types.Message):
+    if m.from_user.id not in client.sudoers:
+        return
     if not db.active_calls:
         return await m.reply_text(m.lang["vc_empty"])
 

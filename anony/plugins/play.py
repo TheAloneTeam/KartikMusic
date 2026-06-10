@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pyrogram import filters, types
 
-from anony import anon, app, config, db, lang, queue, tg, yt
+from anony import Bot, anon, app, config, db, lang, queue, tg, yt
 from anony.helpers import buttons, utils
 from anony.helpers._play import checkUB
 
@@ -20,15 +20,15 @@ def playlist_to_queue(chat_id: int, tracks: list) -> str:
     text = text[:1948] + "</blockquote>"
     return text
 
-@app.on_message(
+@Bot.on_message(
     filters.command(["play", "playforce", "vplay", "vplayforce"])
     & filters.group
-    & ~app.bl_users
+    & ~filters.bl_users
 )
 @lang.language()
 @checkUB
 async def play_hndlr(
-    _,
+    client,
     m: types.Message,
     force: bool = False,
     m3u8: bool = False,
@@ -86,14 +86,14 @@ async def play_hndlr(
         )
 
     if await db.is_logger():
-        await utils.play_log(m, sent.link, file.title, file.duration)
+        await utils.play_log(m, sent.link, file.title, file.duration, client=client)
 
     file.user = mention
     if force:
         current = queue.get_current(m.chat.id)
         if current and current.message_id:
             try:
-                await app.delete_messages(m.chat.id, current.message_id)
+                await client.delete_messages(m.chat.id, current.message_id)
             except Exception:
                 pass
         queue.force_add(m.chat.id, file)
@@ -115,7 +115,7 @@ async def play_hndlr(
             )
             if tracks:
                 added = playlist_to_queue(m.chat.id, tracks)
-                await app.send_message(
+                await client.send_message(
                     chat_id=m.chat.id,
                     text=m.lang["playlist_queued"].format(len(tracks)) + added,
                 )
@@ -129,11 +129,11 @@ async def play_hndlr(
             await sent.edit_text(m.lang["play_downloading"])
             file.file_path = await yt.download(file.id, video=video)
 
-    await anon.play_media(chat_id=m.chat.id, message=sent, media=file)
+    await anon.play_media(chat_id=m.chat.id, message=sent, media=file, client=client)
     if not tracks:
         return
     added = playlist_to_queue(m.chat.id, tracks)
-    await app.send_message(
+    await client.send_message(
         chat_id=m.chat.id,
         text=m.lang["playlist_queued"].format(len(tracks)) + added,
     )
