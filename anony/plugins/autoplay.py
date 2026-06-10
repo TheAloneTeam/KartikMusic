@@ -13,13 +13,15 @@ from anony.helpers import can_manage_vc
 @lang.language()
 @can_manage_vc
 async def _autoplay(_, m: types.Message):
-    if not await db.get_call(m.chat.id):
-        return await m.reply_text(m.lang["not_playing"])
+    if len(m.command) < 2:
+        return await m.reply_text(f"<b>Usage:</b>\n\n/{m.command[0]} [enable|disable]")
 
-    status = await db.get_autoplay(m.chat.id)
-    if status:
-        await db.set_autoplay(m.chat.id, False)
-        await m.reply_text(m.lang["autoplay_off"].format(m.from_user.mention))
-    else:
+    arg = m.command[1].lower()
+    if arg in ["enable", "on"]:
         await db.set_autoplay(m.chat.id, True)
-        await m.reply_text(m.lang["autoplay_on"].format(m.from_user.mention))
+        return await m.reply_text(m.lang["autoplay_on"].format(m.from_user.mention))
+    elif arg in ["disable", "off"]:
+        await db.set_autoplay(m.chat.id, False)
+        return await m.reply_text(m.lang["autoplay_off"].format(m.from_user.mention))
+
+    return await m.reply_text(f"<b>Usage:</b>\n\n/{m.command[0]} [enable|disable]")

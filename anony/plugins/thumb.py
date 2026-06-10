@@ -9,14 +9,19 @@ from anony import app, db, lang
 from anony.helpers import admin_check
 
 
-@app.on_message(filters.command(["thumb", "thumbnail"]) & filters.group & ~app.bl_users)
+@app.on_message(filters.command(["nothumb"]) & filters.group & ~app.bl_users)
 @lang.language()
 @admin_check
 async def _thumb_hndlr(_, m: types.Message):
-    status = await db.get_thumb_mode(m.chat.id)
-    if status:
+    if len(m.command) < 2:
+        return await m.reply_text(f"<b>Usage:</b>\n\n/{m.command[0]} [enable|disable]")
+
+    arg = m.command[1].lower()
+    if arg in ["enable", "on"]:
         await db.set_thumb_mode(m.chat.id, False)
         return await m.reply_text(m.lang["thumb_off"])
+    elif arg in ["disable", "off"]:
+        await db.set_thumb_mode(m.chat.id, True)
+        return await m.reply_text(m.lang["thumb_on"])
 
-    await db.set_thumb_mode(m.chat.id, True)
-    await m.reply_text(m.lang["thumb_on"])
+    return await m.reply_text(f"<b>Usage:</b>\n\n/{m.command[0]} [enable|disable]")
