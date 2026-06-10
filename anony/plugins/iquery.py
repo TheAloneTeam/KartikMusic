@@ -4,7 +4,7 @@
 
 
 from py_yt import VideosSearch
-from pyrogram import types
+from pyrogram import types, filters
 
 from anony import Bot, app
 from anony.helpers import buttons
