@@ -305,7 +305,7 @@ class TgCall(PyTgCalls):
             await self.decorators(client)
         logger.info("PyTgCalls client(s) started.")
 
-    async def boot_clone(self, ub: Userbot, bot) -> None:
+    async def boot_clone(self, ub, bot) -> None:
         client = PyTgCalls(ub.one, cache_duration=100)
         await client.start()
         self.clients.append(client)
