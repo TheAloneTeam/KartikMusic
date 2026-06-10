@@ -139,7 +139,7 @@ class MongoDB:
         self.assistant[chat_id] = num
         return num
 
-    async def get_assistant(self, chat_id: int, bot_id: int = None, client_bot: Bot = None):
+    async def get_assistant(self, chat_id: int, bot_id: int = None, client_bot = None):
         from anony import anon, app
 
         _bot_id = bot_id or (client_bot.id if client_bot else app.id)
@@ -163,7 +163,7 @@ class MongoDB:
 
         return anon.clients[self.assistant[chat_id] - 1]
 
-    async def get_client(self, chat_id: int, bot_id: int = None, client_bot: Bot = None):
+    async def get_client(self, chat_id: int, bot_id: int = None, client_bot = None):
         from anony import app
         _bot_id = bot_id or (client_bot.id if client_bot else app.id)
         if _bot_id != app.id:

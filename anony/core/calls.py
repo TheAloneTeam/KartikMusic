@@ -25,7 +25,7 @@ class TgCall(PyTgCalls):
         self.restarting = defaultdict(int)
         self.bots = {}
 
-    async def pause(self, chat_id: int, bot_id: int = None, client_bot: Bot = None) -> bool:
+    async def pause(self, chat_id: int, bot_id: int = None, client_bot= None) -> bool:
         client = await db.get_assistant(chat_id, bot_id=bot_id, client_bot=client_bot)
         await db.playing(chat_id, paused=True)
 
@@ -36,7 +36,7 @@ class TgCall(PyTgCalls):
 
         return await client.pause(chat_id)
 
-    async def resume(self, chat_id: int, bot_id: int = None, client_bot: Bot = None) -> bool:
+    async def resume(self, chat_id: int, bot_id: int = None, client_bot= None) -> bool:
         client = await db.get_assistant(chat_id, bot_id=bot_id, client_bot=client_bot)
         await db.playing(chat_id, paused=False)
 
@@ -46,7 +46,7 @@ class TgCall(PyTgCalls):
 
         return await client.resume(chat_id)
 
-    async def stop(self, chat_id: int, client_bot: Bot = None) -> None:
+    async def stop(self, chat_id: int, client_bot= None) -> None:
         _bot = client_bot or app
         client = await db.get_assistant(chat_id, bot_id=_bot.id, client_bot=_bot)
         media = queue.get_current(chat_id)
@@ -71,7 +71,7 @@ class TgCall(PyTgCalls):
         message: Message,
         media: Media | Track,
         seek_time: int = 0,
-        client: Bot = None,
+        client= None,
     ) -> None:
         self.restarting[chat_id] += 1
         if await db.get_call(chat_id):
@@ -189,7 +189,7 @@ class TgCall(PyTgCalls):
             self.restarting[chat_id] -= 1
 
 
-    async def replay(self, chat_id: int, client_bot: Bot = None) -> None:
+    async def replay(self, chat_id: int, client_bot= None) -> None:
         _bot = client_bot or app
         if not await db.get_call(chat_id):
             return
@@ -206,7 +206,7 @@ class TgCall(PyTgCalls):
         await self.play_media(chat_id, msg, media, client=_bot)
 
 
-    async def play_next(self, chat_id: int, client_bot: Bot = None) -> None:
+    async def play_next(self, chat_id: int, client_bot= None) -> None:
         _bot = client_bot or app
         if loop := await db.get_loop(chat_id):
             await db.set_loop(chat_id, loop - 1)
@@ -278,7 +278,7 @@ class TgCall(PyTgCalls):
         return round(sum(pings) / len(pings), 2)
 
 
-    async def decorators(self, client: PyTgCalls, client_bot: Bot = None) -> None:
+    async def decorators(self, client: PyTgCalls, client_bot= None) -> None:
         @client.on_update()
         async def update_handler(c: PyTgCalls, update: types.Update) -> None:
             if isinstance(update, types.StreamEnded):
@@ -305,7 +305,7 @@ class TgCall(PyTgCalls):
             await self.decorators(client)
         logger.info("PyTgCalls client(s) started.")
 
-    async def boot_clone(self, ub: Userbot, bot: Bot) -> None:
+    async def boot_clone(self, ub: Userbot, bot) -> None:
         client = PyTgCalls(ub.one, cache_duration=100)
         await client.start()
         self.clients.append(client)
