@@ -24,6 +24,7 @@ async def idle():
 
 async def main():
     await db.connect()
+    await thumb.start()
     await app.boot()
     await userbot.boot()
     await anon.boot()

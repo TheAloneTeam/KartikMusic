@@ -64,6 +64,7 @@ anon = TgCall()
 
 async def stop() -> None:
     logger.info("Stopping...")
+    await thumb.close()
     for task in tasks:
         task.cancel()
         try:
