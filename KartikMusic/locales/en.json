@@ -173,6 +173,10 @@
     "help_11": "Autoplay",
     "help_thumb": "<u><b>Thumbnail commands:</b></u>\n\n/nothumb [enable|disable]: Toggles the thumbnail off/on for the chat."
 , "queue_finished": "🎵𝐓ʜᴇ 𝐐ᴜᴇᴜᴇ 𝐇ᴀs 𝐅ɪɴɪsʜᴇᴅ. 𝐔sᴇ /play 𝐓ᴏ 𝐀ᴅᴅ 𝐌ᴏʀᴇ 𝐒ᴏɴɢs.⚡️",
+    "voice_searching": "🎙️ <b>Processing voice command...</b>",
+    "voice_transcribed": "🎙️ <b>Transcribed:</b> <code>{0}</code>",
+    "voice_invalid": "🎙️ <b>Invalid voice command!</b>\n\nYou must say <b>'play'</b> or <b>'vplay'</b> followed by the song name.",
+    "voice_error": "🎙️ <b>Sorry, I couldn't understand your voice message or an error occurred.</b>",
     "general_5": "The bot is not streaming in the video chat.",
     "admin_13": "Failed to fetch the admin list.",
     "admin_14": "You? Manage the video chat? Not with those permissions, sweetie.",

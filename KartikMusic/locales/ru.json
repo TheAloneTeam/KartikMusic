@@ -186,5 +186,9 @@
     "admin_30": "Please wait for a moment before changing the playback speed.",
     "admin_29": "The playback speed is already set to 1.0x",
     "queue_2": "The bot is not streaming in the video chat.",
-    "CLOSE_BUTTON": "Close ✘"
+    "CLOSE_BUTTON": "Close ✘",
+    "voice_searching": "🎙️ <b>Processing voice command...</b>",
+    "voice_transcribed": "🎙️ <b>Transcribed:</b> <code>{0}</code>",
+    "voice_invalid": "🎙️ <b>Invalid voice command!</b>\n\nYou must say <b>'play'</b> or <b>'vplay'</b> followed by the song name.",
+    "voice_error": "🎙️ <b>Sorry, I couldn't understand your voice message or an error occurred.</b>"
 }

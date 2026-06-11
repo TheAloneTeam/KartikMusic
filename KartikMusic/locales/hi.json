@@ -186,5 +186,9 @@
     "admin_30": "Please wait for a moment before changing the playback speed.",
     "admin_29": "The playback speed is already set to 1.0x",
     "queue_2": "The bot is not streaming in the video chat.",
-    "CLOSE_BUTTON": "Close ✘"
+    "CLOSE_BUTTON": "Close ✘",
+    "voice_searching": "🎙️ <b>आवाज आदेश संसाधित किया जा रहा है...</b>",
+    "voice_transcribed": "🎙️ <b>अनुवादित:</b> <code>{0}</code>",
+    "voice_invalid": "🎙️ <b>अमान्य आवाज आदेश!</b>\n\nआपको गाने के नाम से पहले <b>'play'</b> या <b>'vplay'</b> बोलना होगा।",
+    "voice_error": "🎙️ <b>क्षमा करें, मैं आपके ध्वनि संदेश को समझ नहीं पाया या कोई त्रुटि हुई।</b>"
 }

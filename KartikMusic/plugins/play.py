@@ -10,6 +10,7 @@ from pyrogram import filters, types
 from KartikMusic import Kartik, app, config, db, lang, queue, tg, yt
 from KartikMusic.helpers import buttons, utils
 from KartikMusic.helpers._play import checkUB
+from KartikMusic.helpers.play_helper import stream_media
 
 
 def playlist_to_queue(chat_id: int, tracks: list) -> str:
@@ -37,13 +38,13 @@ async def play_hndlr(
     url: str = None,
 ) -> None:
     sent = await m.reply_text(m.lang["play_searching"])
+    setattr(sent, "lang", m.lang)
     file = None
     mention = m.from_user.mention
     media = tg.get_media(m.reply_to_message) if m.reply_to_message else None
     tracks = []
 
     if media:
-        setattr(sent, "lang", m.lang)
         file = await tg.download(m.reply_to_message, sent)
 
     elif m3u8:
@@ -79,60 +80,11 @@ async def play_hndlr(
     if not file:
         return await sent.edit_text(m.lang["play_usage"])
 
-    if file.duration_sec > config.DURATION_LIMIT:
-        return await sent.edit_text(
-            m.lang["play_duration_limit"].format(config.DURATION_LIMIT // 60)
+    await stream_media(m.chat.id, sent, file, mention, video, force)
+
+    if tracks:
+        added = playlist_to_queue(m.chat.id, tracks)
+        await app.send_message(
+            chat_id=m.chat.id,
+            text=m.lang["playlist_queued"].format(len(tracks)) + added,
         )
-
-    if await db.is_logger():
-        await utils.play_log(m, sent.link, file.title, file.duration)
-
-    file.user = mention
-    if force:
-        current = queue.get_current(m.chat.id)
-        if current and current.message_id:
-            try:
-                await app.delete_messages(m.chat.id, current.message_id)
-            except Exception:
-                pass
-        queue.force_add(m.chat.id, file)
-    else:
-        position = queue.add(m.chat.id, file)
-
-        if position != 0 or await db.get_call(m.chat.id):
-            await sent.edit_text(
-                m.lang["play_queued"].format(
-                    position,
-                    file.url,
-                    file.title,
-                    file.duration,
-                    m.from_user.mention,
-                ),
-                reply_markup=buttons.play_queued(
-                    m.chat.id, file.id, m.lang["play_now"]
-                ),
-            )
-            if tracks:
-                added = playlist_to_queue(m.chat.id, tracks)
-                await app.send_message(
-                    chat_id=m.chat.id,
-                    text=m.lang["playlist_queued"].format(len(tracks)) + added,
-                )
-            return
-
-    if not file.file_path:
-        fname = f"downloads/{file.id}.{'mp4' if video else 'webm'}"
-        if Path(fname).exists():
-            file.file_path = fname
-        else:
-            await sent.edit_text(m.lang["play_downloading"])
-            file.file_path = await yt.download(file.id, video=video)
-
-    await Kartik.play_media(chat_id=m.chat.id, message=sent, media=file)
-    if not tracks:
-        return
-    added = playlist_to_queue(m.chat.id, tracks)
-    await app.send_message(
-        chat_id=m.chat.id,
-        text=m.lang["playlist_queued"].format(len(tracks)) + added,
-    )
