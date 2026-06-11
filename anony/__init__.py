@@ -1,8 +1,3 @@
-# Copyright (c) 2025 AnonymousX1025
-# Licensed under the MIT License.
-# This file is part of AnonXMusic
-
-
 import time
 import asyncio
 import logging
@@ -34,7 +29,7 @@ config.check()
 tasks = []
 boot = time.time()
 
-from anony.core.bot import Bot
+from KartikMusic.core.bot import Bot
 app = Bot()
 
 from anony.core.dir import ensure_dirs
@@ -43,22 +38,22 @@ ensure_dirs()
 from anony.core.userbot import Userbot
 userbot = Userbot()
 
-from anony.core.mongo import MongoDB
+from KartikMusic.core.mongo import MongoDB
 db = MongoDB()
 
-from anony.core.lang import Language
+from KartikMusic.core.lang import Language
 lang = Language()
 
-from anony.core.telegram import Telegram
-from anony.core.youtube import YouTube
+from KartikMusic.core.telegram import Telegram
+from KartikMusic.core.youtube import YouTube
 tg = Telegram()
 yt = YouTube()
 
-from anony.helpers import Queue, Thumbnail
+from KartikMusic.helpers import Queue, Thumbnail
 queue = Queue()
 thumb = Thumbnail()
 
-from anony.core.calls import TgCall
+from KartikMusic.core.calls import TgCall
 anon = TgCall()
 
 
