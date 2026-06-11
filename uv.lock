@@ -699,7 +699,7 @@ requires-dist = [
     { name = "kurigram", specifier = ">=2.2.21" },
     { name = "pillow", specifier = "~=12.2.0" },
     { name = "psutil", specifier = "~=7.2.2" },
-    { name = "py-tgcalls", specifier = "~=2.2.11" },
+    { name = "py-tgcalls" },
     { name = "py-yt-search", specifier = "~=0.6.2" },
     { name = "pymongo", specifier = ">=4.16.0" },
     { name = "pytgcrypto", specifier = ">=1.2.11" },
