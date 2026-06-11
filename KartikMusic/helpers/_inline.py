@@ -51,44 +51,44 @@ class Inline:
 
         if not remove:
             if more:
-                _on = "Enabled ✅"
-                _off = "Disabled ❌"
+                _on = "✅ Enabled"
+                _off = "❌ Disabled"
                 keyboard.append(
                     [
-                        self.ikb(text="Autoplay", callback_data="help autoplay"),
+                        self.ikb(text="🔄 Autoplay", callback_data="help autoplay"),
                         self.ikb(text=_on if autoplay else _off, callback_data=f"controls cautoplay {chat_id}"),
                     ]
                 )
                 keyboard.append(
                     [
-                        self.ikb(text="Thumbnail", callback_data="help thumb"),
+                        self.ikb(text="🖼️ Thumbnail", callback_data="help thumb"),
                         self.ikb(text=_on if thumb else _off, callback_data=f"controls cthumb {chat_id}"),
                     ]
                 )
                 keyboard.append(
-                    [self.ikb(text="Back ⬅️", callback_data=f"controls back {chat_id}")]
+                    [self.ikb(text="⬅️ Back", callback_data=f"controls back {chat_id}")]
                 )
             else:
                 keyboard.append(
                     [
-                        self.ikb(text="▷", callback_data=f"controls resume {chat_id}"),
-                        self.ikb(text="II", callback_data=f"controls pause {chat_id}"),
-                        self.ikb(text="⥁", callback_data=f"controls replay {chat_id}"),
-                        self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}"),
-                        self.ikb(text="▢", callback_data=f"controls stop {chat_id}"),
+                        self.ikb(text="▶️", callback_data=f"controls resume {chat_id}"),
+                        self.ikb(text="⏸️", callback_data=f"controls pause {chat_id}"),
+                        self.ikb(text="🔁", callback_data=f"controls replay {chat_id}"),
+                        self.ikb(text="⏭️", callback_data=f"controls skip {chat_id}"),
+                        self.ikb(text="⏹️", callback_data=f"controls stop {chat_id}"),
                     ]
                 )
                 keyboard.append(
                     [
-                        self.ikb(text="-20s", callback_data=f"controls seek {chat_id} -20"),
-                        self.ikb(text="More", callback_data=f"controls more {chat_id}"),
-                        self.ikb(text="+20s", callback_data=f"controls seek {chat_id} 20"),
+                        self.ikb(text="⏪ -20s", callback_data=f"controls seek {chat_id} -20"),
+                        self.ikb(text="➕ More", callback_data=f"controls more {chat_id}"),
+                        self.ikb(text="⏩ +20s", callback_data=f"controls seek {chat_id} 20"),
                     ]
                 )
                 keyboard.append(
                     [
-                        self.ikb(text=lang["add_mee"] if lang else "Add Me", url=f"https://t.me/{app.username}?startgroup=true"),
-                        self.ikb(text="Close ✘", callback_data=f"controls close {chat_id}"),
+                        self.ikb(text=lang["add_mee"] if lang else "➕ Add Me", url=f"https://t.me/{app.username}?startgroup=true"),
+                        self.ikb(text="🗑️ Close", callback_data=f"controls close {chat_id}"),
                     ]
                 )
         return self.ikm(keyboard)
@@ -131,11 +131,11 @@ class Inline:
         return self.ikm(
             [
                 [
-                    self.ikb(text="Audio 🎵", callback_data=f"song_download audio {vid_id}"),
-                    self.ikb(text="Video 🎬", callback_data=f"song_download video {vid_id}"),
+                    self.ikb(text="🎵 Audio", callback_data=f"song_download audio {vid_id}"),
+                    self.ikb(text="🎬 Video", callback_data=f"song_download video {vid_id}"),
                 ],
                 [
-                    self.ikb(text="Close ✘", callback_data="help close"),
+                    self.ikb(text="🗑️ Close", callback_data="help close"),
                 ],
             ]
         )
@@ -188,8 +188,8 @@ class Inline:
         language: str,
         chat_id: int,
     ) -> types.InlineKeyboardMarkup:
-        _on = "Enabled ✅"
-        _off = "Disabled ❌"
+        _on = "✅ Enabled"
+        _off = "❌ Disabled"
         return self.ikm(
             [
                 [
@@ -268,7 +268,7 @@ class Inline:
             rows += [
                 [
                     self.ikb(
-                        text="Owner",
+                        text="👑 Owner",
                         user_id=config.OWNER_ID,
                     )
                 ]
@@ -281,8 +281,8 @@ class Inline:
         return self.ikm(
             [
                 [
-                    self.ikb(text="❐", copy_text=link),
-                    self.ikb(text="Youtube", url=link),
+                    self.ikb(text="📋 Copy", copy_text=link),
+                    self.ikb(text="📺 Youtube", url=link),
                 ],
             ]
         )
