@@ -35,7 +35,7 @@ app = Bot()
 from KartikMusic.core.dir import ensure_dirs
 ensure_dirs()
 
-from anony.core.userbot import Userbot
+from KartikMusic.core.userbot import Userbot
 userbot = Userbot()
 
 from KartikMusic.core.mongo import MongoDB
