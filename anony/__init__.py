@@ -35,30 +35,38 @@ tasks = []
 boot = time.time()
 
 from anony.core.bot import Bot
+
 app = Bot()
 
 from anony.core.dir import ensure_dirs
+
 ensure_dirs()
 
 from anony.core.userbot import Userbot
+
 userbot = Userbot()
 
 from anony.core.mongo import MongoDB
+
 db = MongoDB()
 
 from anony.core.lang import Language
+
 lang = Language()
 
 from anony.core.telegram import Telegram
 from anony.core.youtube import YouTube
+
 tg = Telegram()
 yt = YouTube()
 
 from anony.helpers import Queue, Thumbnail
+
 queue = Queue()
 thumb = Thumbnail()
 
 from anony.core.calls import TgCall
+
 anon = TgCall()
 
 

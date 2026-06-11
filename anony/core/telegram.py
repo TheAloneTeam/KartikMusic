@@ -55,7 +55,9 @@ class Telegram:
         video = bool(getattr(media, "mime_type", "").startswith("video/"))
 
         if duration > config.DURATION_LIMIT:
-            await sent.edit_text(sent.lang["play_duration_limit"].format(config.DURATION_LIMIT // 60))
+            await sent.edit_text(
+                sent.lang["play_duration_limit"].format(config.DURATION_LIMIT // 60)
+            )
             return await sent.stop_propagation()
 
         if file_size > 200 * 1024 * 1024:
@@ -99,7 +101,8 @@ class Telegram:
                 )
                 self.active_tasks[msg_id] = task
                 await task
-                if file_id in self.active: self.active.remove(file_id)
+                if file_id in self.active:
+                    self.active.remove(file_id)
                 self.active_tasks.pop(msg_id, None)
                 await sent.edit_text(
                     sent.lang["dl_complete"].format(round(time.time() - start_time, 2))
@@ -120,8 +123,8 @@ class Telegram:
         finally:
             self.events.pop(msg_id, None)
             self.last_edit.pop(msg_id, None)
-            if file_id in self.active: self.active.remove(file_id)
-
+            if file_id in self.active:
+                self.active.remove(file_id)
 
     async def process_m3u8(self, url: str, msg_id: int, video: bool) -> Media:
         return Media(

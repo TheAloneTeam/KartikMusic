@@ -6,16 +6,17 @@
 import time
 import asyncio
 from collections import defaultdict
-from ntgcalls import (ConnectionNotFound, TelegramServerError,
-                      RTMPStreamingUnsupported, ConnectionError)
-from pyrogram.errors import (ChatSendMediaForbidden, ChatSendPhotosForbidden,
-                             MessageIdInvalid)
+from ntgcalls import (
+    ConnectionNotFound,
+    TelegramServerError,
+    RTMPStreamingUnsupported,
+    ConnectionError,
+)
 from pyrogram.types import InputMediaPhoto, Message
 from pytgcalls import PyTgCalls, exceptions, types
 from pytgcalls.pytgcalls_session import PyTgCallsSession
 
-from anony import (app, config, db, lang, logger,
-                   queue, thumb, userbot, yt)
+from anony import app, config, db, lang, logger, queue, thumb, userbot, yt
 from anony.helpers import Media, Track, buttons
 
 
@@ -61,7 +62,6 @@ class TgCall(PyTgCalls):
             await client.leave_call(chat_id, close=False)
         except Exception:
             pass
-
 
     async def play_media(
         self,
@@ -181,7 +181,6 @@ class TgCall(PyTgCalls):
             await asyncio.sleep(5)
             self.restarting[chat_id] -= 1
 
-
     async def replay(self, chat_id: int) -> None:
         if not await db.get_call(chat_id):
             return
@@ -196,7 +195,6 @@ class TgCall(PyTgCalls):
         msg = await app.send_message(chat_id=chat_id, text=_lang["play_again"])
         media.message_id = msg.id
         await self.play_media(chat_id, msg, media)
-
 
     async def play_next(self, chat_id: int) -> None:
         if loop := await db.get_loop(chat_id):
@@ -263,11 +261,9 @@ class TgCall(PyTgCalls):
         media.message_id = msg.id
         await self.play_media(chat_id, msg, media)
 
-
     async def ping(self) -> float:
         pings = [client.ping for client in self.clients]
         return round(sum(pings) / len(pings), 2)
-
 
     async def _delete_msg(self, message: Message, delay: int = 2):
         await asyncio.sleep(delay)
@@ -313,7 +309,6 @@ class TgCall(PyTgCalls):
                     types.ChatUpdate.Status.CLOSED_VOICE_CHAT,
                 ]:
                     await self.stop(update.chat_id)
-
 
     async def boot(self) -> None:
         PyTgCallsSession.notice_displayed = True

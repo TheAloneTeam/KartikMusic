@@ -27,16 +27,15 @@ class Utilities:
 
     def format_size(self, bytes: int) -> str:
         if bytes >= 1024**3:
-            return f"{bytes / 1024 ** 3:.2f} GB"
+            return f"{bytes / 1024**3:.2f} GB"
         elif bytes >= 1024**2:
-            return f"{bytes / 1024 ** 2:.2f} MB"
+            return f"{bytes / 1024**2:.2f} MB"
         else:
             return f"{bytes / 1024:.2f} KB"
 
     def to_seconds(self, time: str) -> int:
         parts = [int(p) for p in time.strip().split(":")]
         return sum(value * 60**i for i, value in enumerate(reversed(parts)))
-
 
     def get_url(self, message_1: types.Message) -> str | None:
         link = None
@@ -56,13 +55,12 @@ class Utilities:
                     text = message.text or message.caption
                     if not text:
                         continue
-                    link = text[entity.offset: entity.offset + entity.length]
+                    link = text[entity.offset : entity.offset + entity.length]
                     break
 
         if link:
             return link.split("&si")[0].split("?si")[0]
         return None
-
 
     async def extract_user(self, msg: types.Message) -> types.User | None:
         if msg.reply_to_message:
@@ -83,7 +81,6 @@ class Utilities:
                 pass
 
         return None
-
 
     async def play_log(
         self,

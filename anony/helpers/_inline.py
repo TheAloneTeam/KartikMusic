@@ -15,7 +15,7 @@ class Inline:
         self.ikb = types.InlineKeyboardButton
 
     def cancel_dl(self, text) -> types.InlineKeyboardMarkup:
-        return self.ikm([[self.ikb(text=text, callback_data=f"cancel_dl")]])
+        return self.ikm([[self.ikb(text=text, callback_data="cancel_dl")]])
 
     def controls(
         self,
@@ -45,13 +45,19 @@ class Inline:
                 keyboard.append(
                     [
                         self.ikb(text="Autoplay", callback_data="help autoplay"),
-                        self.ikb(text=_on if autoplay else _off, callback_data=f"controls cautoplay {chat_id}"),
+                        self.ikb(
+                            text=_on if autoplay else _off,
+                            callback_data=f"controls cautoplay {chat_id}",
+                        ),
                     ]
                 )
                 keyboard.append(
                     [
                         self.ikb(text="Thumbnail", callback_data="help thumb"),
-                        self.ikb(text=_on if thumb else _off, callback_data=f"controls cthumb {chat_id}"),
+                        self.ikb(
+                            text=_on if thumb else _off,
+                            callback_data=f"controls cthumb {chat_id}",
+                        ),
                     ]
                 )
                 keyboard.append(
@@ -69,15 +75,26 @@ class Inline:
                 )
                 keyboard.append(
                     [
-                        self.ikb(text="-20s", callback_data=f"controls seek {chat_id} -20"),
-                        self.ikb(text="More ➜", callback_data=f"controls more {chat_id}"),
-                        self.ikb(text="+20s", callback_data=f"controls seek {chat_id} 20"),
+                        self.ikb(
+                            text="-20s", callback_data=f"controls seek {chat_id} -20"
+                        ),
+                        self.ikb(
+                            text="More ➜", callback_data=f"controls more {chat_id}"
+                        ),
+                        self.ikb(
+                            text="+20s", callback_data=f"controls seek {chat_id} 20"
+                        ),
                     ]
                 )
                 keyboard.append(
                     [
-                        self.ikb(text=lang["add_me"] if lang else "Add Me", url=f"https://t.me/{app.username}?startgroup=true"),
-                        self.ikb(text="Close ✘", callback_data=f"controls close {chat_id}"),
+                        self.ikb(
+                            text=lang["add_me"] if lang else "Add Me",
+                            url=f"https://t.me/{app.username}?startgroup=true",
+                        ),
+                        self.ikb(
+                            text="Close ✘", callback_data=f"controls close {chat_id}"
+                        ),
                     ]
                 )
         return self.ikm(keyboard)
@@ -101,7 +118,20 @@ class Inline:
                     )
                 ]
             ]
-            cbs = ["admins", "auth", "blist", "lang", "ping", "play", "queue", "stats", "sudo", "thumb", "vclog", "autoplay"]
+            cbs = [
+                "admins",
+                "auth",
+                "blist",
+                "lang",
+                "ping",
+                "play",
+                "queue",
+                "stats",
+                "sudo",
+                "thumb",
+                "vclog",
+                "autoplay",
+            ]
             buttons = [
                 self.ikb(text=_lang[f"help_{i}"], callback_data=f"help {cb}")
                 for i, cb in enumerate(cbs)
@@ -120,8 +150,12 @@ class Inline:
         return self.ikm(
             [
                 [
-                    self.ikb(text="Audio 🎵", callback_data=f"song_download audio {vid_id}"),
-                    self.ikb(text="Video 🎬", callback_data=f"song_download video {vid_id}"),
+                    self.ikb(
+                        text="Audio 🎵", callback_data=f"song_download audio {vid_id}"
+                    ),
+                    self.ikb(
+                        text="Video 🎬", callback_data=f"song_download video {vid_id}"
+                    ),
                 ],
                 [
                     self.ikb(text="Close ✘", callback_data="help close"),
@@ -206,7 +240,8 @@ class Inline:
                         callback_data="settings",
                     ),
                     self.ikb(
-                        text=_on if autoplay else _off, callback_data="settings autoplay"
+                        text=_on if autoplay else _off,
+                        callback_data="settings autoplay",
                     ),
                 ],
                 [

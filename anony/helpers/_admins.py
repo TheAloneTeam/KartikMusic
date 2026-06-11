@@ -19,11 +19,7 @@ def admin_check(func):
             else:
                 return await update.answer(text, show_alert=True)
 
-        chat = (
-            update.chat
-            if isinstance(update, types.Message)
-            else update.message.chat
-        )
+        chat = update.chat if isinstance(update, types.Message) else update.message.chat
         if chat.type == enums.ChatType.PRIVATE:
             return await func(_, update, *args, **kwargs)
 

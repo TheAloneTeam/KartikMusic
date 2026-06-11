@@ -28,8 +28,10 @@ async def _loop(_, m: types.Message):
         return await m.reply_text(m.lang["loop_usage"])
 
     loop = int(m.command[1]) if not disable else 0
-    if loop < 1: loop = 0
-    elif loop > 10: loop = 10
+    if loop < 1:
+        loop = 0
+    elif loop > 10:
+        loop = 10
 
     await db.set_loop(m.chat.id, loop)
     if loop == 0:

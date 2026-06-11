@@ -23,10 +23,15 @@ async def auto_leave():
         await asyncio.sleep(3600)
         for ub in userbot.clients:
             try:
-                chats = [dialog.chat.id async for dialog in ub.get_dialogs()
-                            if dialog.chat.type in [
-                                enums.ChatType.GROUP, enums.ChatType.SUPERGROUP,
-                            ]][-20:]
+                chats = [
+                    dialog.chat.id
+                    async for dialog in ub.get_dialogs()
+                    if dialog.chat.type
+                    in [
+                        enums.ChatType.GROUP,
+                        enums.ChatType.SUPERGROUP,
+                    ]
+                ][-20:]
                 for chat in chats:
                     if chat in [app.logger, -1001686672798, -1001549206010]:
                         continue
@@ -91,7 +96,10 @@ async def update_timer(length=10, sleep=12):
                     chat_id=chat_id,
                     message_id=message_id,
                     reply_markup=buttons.controls(
-                        chat_id=chat_id, timer=timer, remove=remove, lang=await lang.get_lang(chat_id)
+                        chat_id=chat_id,
+                        timer=timer,
+                        remove=remove,
+                        lang=await lang.get_lang(chat_id),
                     ),
                 )
             except asyncio.CancelledError:

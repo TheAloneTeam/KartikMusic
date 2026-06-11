@@ -24,7 +24,7 @@ lang_codes = {
     "pt": "Português",
     "ru": "Русский",
     "tr": "Türkçe",
-    "zh": "中文"
+    "zh": "中文",
 }
 
 
@@ -76,7 +76,8 @@ class Language:
                 elif hasattr(fallen, "message"):
                     chat = fallen.message.chat
 
-                if not chat: return
+                if not chat:
+                    return
 
                 if chat.id in db.blacklisted:
                     logger.info(f"Chat {chat.id} is blacklisted, leaving...")
@@ -88,11 +89,17 @@ class Language:
                 setattr(fallen, "lang", lang_dict)
                 try:
                     return await func(*args, **kwargs)
-                except (errors.ChannelPrivate, errors.MessageIdInvalid, errors.MessageNotModified):
+                except (
+                    errors.ChannelPrivate,
+                    errors.MessageIdInvalid,
+                    errors.MessageNotModified,
+                ):
                     return
                 except (
-                    errors.Forbidden, errors.exceptions.Forbidden,
-                    errors.ChatWriteForbidden, errors.exceptions.ChatWriteForbidden,
+                    errors.Forbidden,
+                    errors.exceptions.Forbidden,
+                    errors.ChatWriteForbidden,
+                    errors.exceptions.ChatWriteForbidden,
                 ):
                     return
 

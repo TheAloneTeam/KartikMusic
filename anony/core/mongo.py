@@ -372,7 +372,6 @@ class MongoDB:
             self.users.extend([user["_id"] async for user in self.usersdb.find()])
         return self.users
 
-
     async def migrate_coll(self) -> None:
         logger.info("Migrating users and chats from old collections...")
 

@@ -24,7 +24,7 @@ async def _activevc(_, m: types.Message):
 
     for i, chat in enumerate(db.active_calls):
         playing = queue.get_current(chat)
-        text += f"\n{i+1}. <code>{chat}</code>\n    ➜ {playing.title[:25]}"
+        text += f"\n{i + 1}. <code>{chat}</code>\n    ➜ {playing.title[:25]}"
 
     if len(text) < 4000:
         return await sent.edit_text(m.lang["vc_list"] + text)
