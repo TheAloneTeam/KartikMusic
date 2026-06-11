@@ -110,7 +110,7 @@ EOF
 }
 
 
-pprint "Welcome to the KartikMusic Installation Setup\n\n" "cmagenta"
+pprint "Welcome to the AnonXMusic Installation Setup\n\n" "cmagenta"
 
 update
 install_pkgs python3 python3-venv ffmpeg curl unzip
@@ -118,7 +118,7 @@ install_uv || exit 1
 install_deno
 install_py
 
-pprint "\nKartikMusic Installation Completed.\n" "cgreen"
+pprint "\nAnonXMusic Installation Completed.\n" "cgreen"
 
 pprint "\nEnter Your Values Below\n\n\n" "cmagenta"
 read -rp "API ID: " api_id

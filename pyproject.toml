@@ -1,5 +1,5 @@
 [project]
-name = "KartikMusic"
+name = "anonxmusic"
 version = "3.0.3"
 description = "Telegram Group Calls Streaming bot with some useful features."
 readme = ".github/README.md"
@@ -10,7 +10,7 @@ dependencies = [
     "kurigram>=2.2.21",
     "pillow~=12.2.0",
     "psutil~=7.2.2",
-    "py-tgcalls",
+    "py-tgcalls~=2.2.11",
     "py-yt-search~=0.6.2",
     "pymongo>=4.16.0",
     "pytgcrypto>=1.2.11",
