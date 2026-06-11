@@ -3,16 +3,28 @@
 # This file is part of KartikMusic
 
 
+import random
 from pyrogram import types
 
 from KartikMusic import app, config, lang
 from KartikMusic.core.lang import lang_codes
 
 
+RANDOM_EMOJIS = [
+    "🎸", "🎹", "🎺", "🎻", "🎷", "🥁", "🎵", "🎶", "🎧", "🎤",
+    "✨", "🌟", "🔥", "🌈", "🎈", "🎉", "💖", "💎", "🚀", "🛸",
+    "🍎", "🍌", "🍒", "🍓", "🍇", "🍉", "🍑", "🍍", "🥝", "🫐"
+]
+
+
 class Inline:
     def __init__(self):
         self.ikm = types.InlineKeyboardMarkup
-        self.ikb = types.InlineKeyboardButton
+
+    def ikb(self, text: str, **kwargs) -> types.InlineKeyboardButton:
+        return types.InlineKeyboardButton(
+            text=f"{random.choice(RANDOM_EMOJIS)} {text}", **kwargs
+        )
 
     def cancel_dl(self, text) -> types.InlineKeyboardMarkup:
         return self.ikm([[self.ikb(text=text, callback_data=f"cancel_dl")]])
