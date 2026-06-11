@@ -10,7 +10,6 @@ import re
 import urllib.parse
 
 import aiohttp
-import httpx
 from py_yt import Playlist, Recommendations, VideosSearch
 
 from KartikMusic import logger
@@ -54,8 +53,10 @@ class YouTube:
         self._client = None
 
     async def get_client(self):
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
+        if self._client is None or self._client.closed:
+            self._client = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=600.0, connect=10.0)
+            )
         return self._client
 
     def get_cookies(self):
@@ -107,26 +108,26 @@ class YouTube:
         if API_KEY:
             params["api_key"] = API_KEY
         try:
-            response = await client.get(f"{API_URL}/search", params=params)
-            if response.status_code == 200:
-                result_data = response.json()
-                result = result_data.get("result")
-                if result:
-                    data = result[0]
-                    return Track(
-                        id=data.get("id"),
-                        channel_name=data.get("channel", {}).get("name"),
-                        duration=data.get("duration"),
-                        duration_sec=utils.to_seconds(data.get("duration")),
-                        message_id=m_id,
-                        title=data.get("title")[:25],
-                        thumbnail=data.get("thumbnails", [{}])[-1]
-                        .get("url")
-                        .split("?")[0],
-                        url=data.get("link"),
-                        view_count=data.get("viewCount", {}).get("short"),
-                        video=video,
-                    )
+            async with client.get(f"{API_URL}/search", params=params) as response:
+                if response.status == 200:
+                    result_data = await response.json()
+                    result = result_data.get("result")
+                    if result:
+                        data = result[0]
+                        return Track(
+                            id=data.get("id"),
+                            channel_name=data.get("channel", {}).get("name"),
+                            duration=data.get("duration"),
+                            duration_sec=utils.to_seconds(data.get("duration")),
+                            message_id=m_id,
+                            title=data.get("title")[:25],
+                            thumbnail=data.get("thumbnails", [{}])[-1]
+                            .get("url")
+                            .split("?")[0],
+                            url=data.get("link"),
+                            view_count=data.get("viewCount", {}).get("short"),
+                            video=video,
+                        )
         except Exception as e:
             logger.error(f"Error in search from API: {e}")
 
@@ -161,29 +162,29 @@ class YouTube:
         if API_KEY:
             params["api_key"] = API_KEY
         try:
-            response = await client.get(f"{API_URL}/playlist", params=params)
-            if response.status_code == 200:
-                data = response.json()
-                videos = data.get("videos")
-                if videos:
-                    tracks = []
-                    for data in videos:
-                        track = Track(
-                            id=data.get("id"),
-                            channel_name=data.get("channel", {}).get("name", ""),
-                            duration=data.get("duration"),
-                            duration_sec=utils.to_seconds(data.get("duration")),
-                            title=data.get("title")[:25],
-                            thumbnail=data.get("thumbnails")[-1]
-                            .get("url")
-                            .split("?")[0],
-                            url=data.get("link").split("&list=")[0],
-                            user=user,
-                            view_count="",
-                            video=video,
-                        )
-                        tracks.append(track)
-                    return tracks
+            async with client.get(f"{API_URL}/playlist", params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    videos = data.get("videos")
+                    if videos:
+                        tracks = []
+                        for data in videos:
+                            track = Track(
+                                id=data.get("id"),
+                                channel_name=data.get("channel", {}).get("name", ""),
+                                duration=data.get("duration"),
+                                duration_sec=utils.to_seconds(data.get("duration")),
+                                title=data.get("title")[:25],
+                                thumbnail=data.get("thumbnails")[-1]
+                                .get("url")
+                                .split("?")[0],
+                                url=data.get("link").split("&list=")[0],
+                                user=user,
+                                view_count="",
+                                video=video,
+                            )
+                            tracks.append(track)
+                        return tracks
         except Exception as e:
             logger.error(f"Error fetching playlist from API: {e}")
 
@@ -241,8 +242,8 @@ class YouTube:
             params["api_key"] = API_KEY
         try:
             # Fire and forget request to the API
-            await client.get(f"{API_URL}/download", params=params)
-            return True
+            async with client.get(f"{API_URL}/download", params=params) as response:
+                return True
         except Exception as e:
             logger.error(f"Prefetch failed for {link}: {e}")
         return False
@@ -301,5 +302,5 @@ class YouTube:
         return await download_assistant(url, dl_type)
 
     async def close(self):
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
+        if self._client and not self._client.closed:
+            await self._client.close()
