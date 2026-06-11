@@ -190,5 +190,7 @@
     "voice_searching": "🎙️ <b>Processing voice command...</b>",
     "voice_transcribed": "🎙️ <b>Transcribed:</b> <code>{0}</code>",
     "voice_invalid": "🎙️ <b>Invalid voice command!</b>\n\nYou must say <b>'play'</b> or <b>'vplay'</b> followed by the song name.",
-    "voice_error": "🎙️ <b>Sorry, I couldn't understand your voice message or an error occurred.</b>"
+    "voice_error": "🎙️ <b>Sorry, I couldn't understand your voice message or an error occurred.</b>",
+    "help_12": "Voice",
+    "help_voice": "<u><b>Voice commands:</b></u>\n\nYou can play music by sending a voice message starting with <b>'play'</b> or <b>'vplay'</b> followed by the song name.\n\n<b>Example:</b> [Voice Message] 'play Faded'"
 }

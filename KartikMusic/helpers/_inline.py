@@ -141,6 +141,7 @@ class Inline:
                 "thumb",
                 "vclog",
                 "autoplay",
+                "voice",
             ]
             buttons = [
                 self.ikb(text=_lang[f"help_{i}"], callback_data=f"help {cb}")

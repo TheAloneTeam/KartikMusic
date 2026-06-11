@@ -171,6 +171,8 @@
     "help_9": "Thumbnail",
     "help_10": "VC Logger",
     "help_11": "Autoplay",
+    "help_12": "Voice",
+    "help_voice": "<u><b>Voice commands:</b></u>\n\nYou can play music by sending a voice message starting with <b>'play'</b> or <b>'vplay'</b> followed by the song name.\n\n<b>Example:</b> [Voice Message] 'play Faded'",
     "help_thumb": "<u><b>Thumbnail commands:</b></u>\n\n/nothumb [enable|disable]: Toggles the thumbnail off/on for the chat."
 , "queue_finished": "🎵𝐓ʜᴇ 𝐐ᴜᴇᴜᴇ 𝐇ᴀs 𝐅ɪɴɪsʜᴇᴅ. 𝐔sᴇ /play 𝐓ᴏ 𝐀ᴅᴅ 𝐌ᴏʀᴇ 𝐒ᴏɴɢs.⚡️",
     "voice_searching": "🎙️ <b>Processing voice command...</b>",
