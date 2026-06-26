@@ -268,7 +268,7 @@ class TgCall(PyTgCalls):
             except Exception:
                 pass
 
-        media = queue.get_next(chat_id, check=True)
+        media = queue.get_next(chat_id)
         if not media:
             if await db.get_autoplay(chat_id):
                 if current and isinstance(current, Track):
@@ -283,7 +283,7 @@ class TgCall(PyTgCalls):
                     # Set max duration for autoplay tracks based on current song
                     # but capped at 15 minutes to avoid extremely long tracks
                     # Use existing next item if it was pre-fetched
-                    media = queue.get_next(chat_id)
+                    media = queue.get_current(chat_id)
                     if not media:
                         max_duration = min(int(current.duration_sec * 1.5), 900)
                         media = await yt.get_related(
@@ -291,9 +291,12 @@ class TgCall(PyTgCalls):
                         )
                         if media:
                             queue.add(chat_id, media)
-                            media = queue.get_next(chat_id)
 
                     if media:
+                        # Re-fetch from queue in case it was just added to ensure
+                        # we have the object that might have file_path set by prefetcher
+                        media = queue.get_current(chat_id)
+
                         if not media.file_path:
                             media.file_path = await yt.download(
                                 media.id, video=media.video
@@ -328,11 +331,7 @@ class TgCall(PyTgCalls):
                     )
                 return await app.send_message(chat_id, _lang["queue_finished"])
 
-        # If we reached here, there is a next media in the queue
-        media = queue.get_next(chat_id)
-        if not media:
-            await self.stop(chat_id)
-            return await app.send_message(chat_id, _lang["queue_finished"])
+        # If we reached here, media was already retrieved by queue.get_next above
 
         msg = None
         if media.message_id:
