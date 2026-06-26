@@ -56,6 +56,10 @@ class TgCall(PyTgCalls):
     async def _prepare_next(self, chat_id: int) -> None:
         try:
             while await db.get_call(chat_id):
+                if not await db.get_autoplay(chat_id):
+                    await asyncio.sleep(10)
+                    continue
+
                 media = queue.get_current(chat_id)
                 if not media or not media.duration_sec:
                     break

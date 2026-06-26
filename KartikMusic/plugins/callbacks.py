@@ -46,8 +46,15 @@ async def _controls(_, query: types.CallbackQuery):
             return
 
     if action == "status":
-        return await query.answer()
-    await query.answer(query.lang["processing"], show_alert=True)
+        try:
+            return await query.answer()
+        except errors.QueryIdInvalid:
+            return
+
+    try:
+        await query.answer(query.lang["processing"], show_alert=True)
+    except errors.QueryIdInvalid:
+        pass
 
     if action == "pause":
         if not await db.playing(chat_id):
@@ -133,7 +140,10 @@ async def _controls(_, query: types.CallbackQuery):
 
         await Kartik.play_media(chat_id, query.message, media, new_pos)
         media.time = new_pos
-        return await query.answer(f"Seeked to {new_pos}s", show_alert=True)
+        try:
+            return await query.answer(f"Seeked to {new_pos}s", show_alert=True)
+        except errors.QueryIdInvalid:
+            return
 
     elif action == "close":
         try:
