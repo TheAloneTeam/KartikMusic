@@ -21,7 +21,7 @@ from KartikMusic import logger
 from KartikMusic.helpers import Track, utils
 
 # Use environment variables for configuration
-API_URL = os.getenv("API_URL", "https://web.riteshyt.in").rstrip("/")
+API_URL = os.getenv("API_URL", "http://web.riteshyt.in").rstrip("/")
 API_KEY = os.getenv("API_KEY", "ritesh_free_5fb3ae9e620c07151e0d520d")
 
 
