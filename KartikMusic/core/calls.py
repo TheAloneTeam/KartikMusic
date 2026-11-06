@@ -417,13 +417,12 @@ class TgCall(PyTgCalls):
                     if self.restarting.get(update.chat_id):
                         return
                     await self.play_next(update.chat_id)
-            elif isinstance(update, types.ChatUpdate):
-                if update.status in [
-                    types.ChatUpdate.Status.KICKED,
-                    types.ChatUpdate.Status.LEFT_GROUP,
-                    types.ChatUpdate.Status.CLOSED_VOICE_CHAT,
-                ]:
-                    await self.stop(update.chat_id)
+            elif isinstance(update, types.ChatUpdate) and update.status in [
+                types.ChatUpdate.Status.KICKED,
+                types.ChatUpdate.Status.LEFT_GROUP,
+                types.ChatUpdate.Status.CLOSED_VOICE_CHAT,
+            ]:
+                await self.stop(update.chat_id)
 
     async def boot(self) -> None:
         PyTgCallsSession.notice_displayed = True
