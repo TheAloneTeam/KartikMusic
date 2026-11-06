@@ -13,7 +13,7 @@ import os
 import random
 import re
 import urllib.parse
-from typing import Optional, Dict, Any, List, Tuple, Union
+from typing import Any
 
 import aiohttp
 from py_yt import Playlist, Recommendations, VideosSearch
@@ -34,7 +34,7 @@ DEFAULT_API_URL = API_URL
 DEFAULT_API_KEY = API_KEY
 
 
-def _safe_search_ytdlp(query: str) -> Dict[str, Any]:
+def _safe_search_ytdlp(query: str) -> dict[str, Any]:
     """Local fallback using yt-dlp to search and extract video info."""
     if yt_dlp is None:
         return {"result": []}
@@ -44,11 +44,7 @@ def _safe_search_ytdlp(query: str) -> Dict[str, Any]:
         "extract_flat": True,
         "quiet": True,
         "no_warnings": True,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["mweb", "ios", "android"]
-            }
-        },
+        "extractor_args": {"youtube": {"player_client": ["mweb", "ios", "android"]}},
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
@@ -149,7 +145,6 @@ class YouTube:
         ("anchor", r"anchor\.fm"),
         ("podcasts_apple", r"podcasts\.apple\.com"),
         ("podcasts_google", r"podcasts\.google\.com"),
-
         # --- Video & Livestreaming Platforms ---
         ("vimeo", r"vimeo\.com"),
         ("dailymotion", r"(?:dailymotion\.com|dai\.ly)"),
@@ -168,7 +163,6 @@ class YouTube:
         ("archiveorg", r"archive\.org"),
         ("youku", r"youku\.com"),
         ("iqiyi", r"(?:iq\.com|iqiyi\.com)"),
-
         # --- Social Media & Short-form Video ---
         ("instagram", r"(?:instagram\.com|instagr\.am)"),
         ("tiktok", r"(?:tiktok\.com|douyin\.com)"),
@@ -194,7 +188,6 @@ class YouTube:
         ("discord", r"(?:discord\.com|discordapp\.com)"),
         ("line", r"(?:line\.me|linevoom\.line\.me)"),
         ("linkedin", r"linkedin\.com"),
-
         # --- Cloud Storage & File Hosts ---
         ("terabox", r"(?:terabox|1024tera)"),
         ("google_drive", r"drive\.google\.com"),
@@ -204,7 +197,6 @@ class YouTube:
         ("mega", r"mega\.(?:nz|io)"),
         ("yandex_disk", r"disk\.yandex\.(?:ru|com)"),
         ("catbox", r"(?:catbox\.moe|files\.catbox\.moe)"),
-
         # --- Asian Regional Music Services ---
         ("qqmusic", r"(?:y\.qq\.com|qq\.com)"),
         ("netease", r"music\.163\.com"),
@@ -215,7 +207,7 @@ class YouTube:
         ("joox", r"joox\.com"),
     ]
 
-    def __init__(self, api_key: Optional[str] = None, api_url: Optional[str] = None):
+    def __init__(self, api_key: str | None = None, api_url: str | None = None):
         self.api_key = (
             api_key
             if api_key is not None
@@ -261,7 +253,7 @@ class YouTube:
             )
         return self._client
 
-    def _get_params(self, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _get_params(self, extra: dict[str, Any] | None = None) -> dict[str, Any]:
         params = {}
         if self.api_key:
             params["api_key"] = self.api_key
@@ -335,10 +327,7 @@ class YouTube:
             if re.search(pattern, s, re.IGNORECASE):
                 return True
 
-        if re.match(r"^https?://[^\s]+", s):
-            return True
-
-        return False
+        return bool(re.match(r"^https?://[^\s]+", s))
 
     def invalid(self, url: str) -> bool:
         if not url:
@@ -376,8 +365,8 @@ class YouTube:
         return f"{self.api_url}/download?query={safe_query}&dl_type={dl_type}&quality={quality}"
 
     async def download_track(
-        self, link: str, chat_id: Optional[int] = None, *args, **kwargs
-    ) -> Optional[str]:
+        self, link: str, chat_id: int | None = None, *args, **kwargs
+    ) -> str | None:
         """Voicechat bot helper: construct direct stream URL for a given track link."""
         return self.get_stream_url(link, dl_type="audio")
 
@@ -399,9 +388,10 @@ class YouTube:
                             title = data.get("title", "Track")
                             duration = str(data.get("duration", "00:00"))
                             thumb = data.get("thumb") or data.get("thumbnail", "")
-                            ytlink = (
-                                data.get("link")
-                                or (f"https://www.youtube.com/watch?v={vidid}" if vidid else query)
+                            ytlink = data.get("link") or (
+                                f"https://www.youtube.com/watch?v={vidid}"
+                                if vidid
+                                else query
                             )
                             if not vidid:
                                 # Search YouTube match for audio streaming
@@ -414,12 +404,16 @@ class YouTube:
 
                             return Track(
                                 id=vidid or query,
-                                channel_name=data.get("artist") or platform.capitalize(),
+                                channel_name=data.get("artist")
+                                or platform.capitalize(),
                                 duration=duration,
                                 duration_sec=utils.to_seconds(duration),
                                 message_id=m_id,
                                 title=title[:25],
-                                thumbnail=thumb or f"https://i.ytimg.com/vi/{vidid}/hqdefault.jpg" if vidid else "",
+                                thumbnail=thumb
+                                or f"https://i.ytimg.com/vi/{vidid}/hqdefault.jpg"
+                                if vidid
+                                else "",
                                 url=ytlink,
                                 view_count="",
                                 video=video,
@@ -522,10 +516,14 @@ class YouTube:
         client = await self.get_client()
         params = self._get_params({"link": url, "limit": limit})
         try:
-            async with client.get(f"{self.api_url}/playlist", params=params) as response:
+            async with client.get(
+                f"{self.api_url}/playlist", params=params
+            ) as response:
                 if response.status == 200:
                     data = await response.json()
-                    videos = data.get("videos") or data.get("tracks") or data.get("result")
+                    videos = (
+                        data.get("videos") or data.get("tracks") or data.get("result")
+                    )
                     if videos:
                         tracks = []
                         for item in videos:
@@ -616,7 +614,9 @@ class YouTube:
             }
 
         client = await self.get_client()
-        params = self._get_params({"query": link, "dl_type": dl_type, "prefetch": "true"})
+        params = self._get_params(
+            {"query": link, "dl_type": dl_type, "prefetch": "true"}
+        )
         try:
             async with client.get(f"{self.api_url}/download", params=params):
                 return True
@@ -675,7 +675,9 @@ class YouTube:
         asyncio.create_task(self.prefetch(url, video=video))
 
         if self.api_key:
-            safe_query = urllib.parse.quote(url if is_url else f"youtube.com/{video_id}")
+            safe_query = urllib.parse.quote(
+                url if is_url else f"youtube.com/{video_id}"
+            )
             ext = "mp4" if video else "mp3"
             stream_url = f"{self.api_url}/downloads/{self.api_key}/{safe_query}.{ext}"
         else:
@@ -697,7 +699,7 @@ class YouTube:
 
         return stream_url
 
-    async def extract_async(self, url: str) -> Dict[str, Any]:
+    async def extract_async(self, url: str) -> dict[str, Any]:
         """Async multi-platform extractor using master /api/get endpoint."""
         client = await self.get_client()
         async with client.get(
@@ -706,16 +708,17 @@ class YouTube:
             resp.raise_for_status()
             return await resp.json()
 
-    async def search_async(self, query: str, limit: int = 5) -> Dict[str, Any]:
+    async def search_async(self, query: str, limit: int = 5) -> dict[str, Any]:
         """Search multi-platform media using /search endpoint."""
         client = await self.get_client()
         async with client.get(
-            f"{self.api_url}/search", params=self._get_params({"q": query, "limit": limit})
+            f"{self.api_url}/search",
+            params=self._get_params({"q": query, "limit": limit}),
         ) as resp:
             resp.raise_for_status()
             return await resp.json()
 
-    async def details_async(self, link_or_id: str) -> Dict[str, Any]:
+    async def details_async(self, link_or_id: str) -> dict[str, Any]:
         """Fetch track metadata details using /details endpoint."""
         client = await self.get_client()
         async with client.get(
@@ -736,13 +739,13 @@ UniversalAPI = YouTube
 all_support = YouTube(api_key=API_KEY, api_url=API_URL)
 
 __all__ = [
-    "YouTube",
+    "API_KEY",
+    "API_URL",
+    "DEFAULT_API_KEY",
+    "DEFAULT_API_URL",
     "AllSupport",
     "AloneAPI",
     "UniversalAPI",
+    "YouTube",
     "all_support",
-    "API_URL",
-    "API_KEY",
-    "DEFAULT_API_URL",
-    "DEFAULT_API_KEY",
 ]
