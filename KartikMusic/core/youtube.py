@@ -436,7 +436,9 @@ class YouTube:
                                     yt_match.title = title[:25]
                                     if duration and duration != "00:00":
                                         yt_match.duration = duration
-                                        yt_match.duration_sec = utils.to_seconds(duration)
+                                        yt_match.duration_sec = utils.to_seconds(
+                                            duration
+                                        )
                                     if thumb:
                                         yt_match.thumbnail = thumb
                                     return yt_match
@@ -501,7 +503,9 @@ class YouTube:
                                     yt_match.title = title[:25]
                                     if duration and duration != "00:00":
                                         yt_match.duration = duration
-                                        yt_match.duration_sec = utils.to_seconds(duration)
+                                        yt_match.duration_sec = utils.to_seconds(
+                                            duration
+                                        )
                                     if thumb:
                                         yt_match.thumbnail = thumb
                                     return yt_match
@@ -727,29 +731,41 @@ class YouTube:
                     if results:
                         # Filter out the current track to ensure continuous playback
                         candidates = [
-                            r for r in results
+                            r
+                            for r in results
                             if r.get("id") and r.get("id") != video_id
                         ]
                         if max_duration:
                             candidates = [
-                                c for c in candidates
-                                if utils.to_seconds(c.get("duration") or "00:00") <= max_duration
+                                c
+                                for c in candidates
+                                if utils.to_seconds(c.get("duration") or "00:00")
+                                <= max_duration
                             ]
                         if candidates:
                             item = random.choice(candidates)
                             thumb = ""
-                            if item.get("thumbnails") and isinstance(item["thumbnails"], list):
+                            if item.get("thumbnails") and isinstance(
+                                item["thumbnails"], list
+                            ):
                                 thumb = item["thumbnails"][0].get("url", "")
                             elif item.get("thumbnail"):
                                 thumb = item.get("thumbnail")
                             return Track(
                                 id=item.get("id"),
-                                channel_name=item.get("author", {}).get("name") if isinstance(item.get("author"), dict) else "Autoplay",
+                                channel_name=item.get("author", {}).get("name")
+                                if isinstance(item.get("author"), dict)
+                                else "Autoplay",
                                 duration=item.get("duration", "00:00"),
-                                duration_sec=utils.to_seconds(item.get("duration") or "00:00"),
+                                duration_sec=utils.to_seconds(
+                                    item.get("duration") or "00:00"
+                                ),
                                 title=item.get("title", "Track")[:25],
-                                thumbnail=thumb.split("?")[0] if thumb else f"https://i.ytimg.com/vi/{item.get('id')}/hqdefault.jpg",
-                                url=item.get("link") or f"https://www.youtube.com/watch?v={item.get('id')}",
+                                thumbnail=thumb.split("?")[0]
+                                if thumb
+                                else f"https://i.ytimg.com/vi/{item.get('id')}/hqdefault.jpg",
+                                url=item.get("link")
+                                or f"https://www.youtube.com/watch?v={item.get('id')}",
                                 user="Autoplay",
                                 video=video,
                             )
@@ -758,27 +774,41 @@ class YouTube:
 
         # 2. Secondary fallback: py_yt Recommendations
         try:
-            get_rel = getattr(Recommendations, "get_related", None) or getattr(Recommendations, "getRelated", None)
+            get_rel = getattr(Recommendations, "get_related", None) or getattr(
+                Recommendations, "getRelated", None
+            )
             if get_rel:
                 _results = await get_rel(video_id)
                 if isinstance(_results, dict):
                     results = _results.get("result", []) or _results.get("videos", [])
                     if results:
-                        videos = [r for r in results if r.get("type") == "video" and r.get("id") != video_id]
+                        videos = [
+                            r
+                            for r in results
+                            if r.get("type") == "video" and r.get("id") != video_id
+                        ]
                         if max_duration:
                             videos = [
-                                v for v in videos
-                                if utils.to_seconds(v.get("duration") or "00:00") <= max_duration
+                                v
+                                for v in videos
+                                if utils.to_seconds(v.get("duration") or "00:00")
+                                <= max_duration
                             ]
                         if videos:
                             data = random.choice(videos)
                             return Track(
                                 id=data.get("id"),
-                                channel_name=data.get("channel", {}).get("name", "Autoplay"),
+                                channel_name=data.get("channel", {}).get(
+                                    "name", "Autoplay"
+                                ),
                                 duration=data.get("duration"),
-                                duration_sec=utils.to_seconds(data.get("duration") or "00:00"),
+                                duration_sec=utils.to_seconds(
+                                    data.get("duration") or "00:00"
+                                ),
                                 title=data.get("title")[:25],
-                                thumbnail=data.get("thumbnails", [{}])[-1].get("url").split("?")[0],
+                                thumbnail=data.get("thumbnails", [{}])[-1]
+                                .get("url")
+                                .split("?")[0],
                                 url=data.get("link"),
                                 user="Autoplay",
                                 video=video,
