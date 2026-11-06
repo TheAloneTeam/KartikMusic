@@ -388,6 +388,26 @@ class YouTube:
         platform = self.detect_platform(query)
         is_url = bool(re.match(r"^https?://", query.strip()))
 
+        # Helper to format duration seconds to MM:SS or HH:MM:SS
+        def _fmt_duration(val: Any) -> str:
+            if not val or val == "00:00":
+                return "00:00"
+            if isinstance(val, (int, float)):
+                secs = int(val)
+                m, s = divmod(secs, 60)
+                h, m = divmod(m, 60)
+                return f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+            val_str = str(val).strip()
+            if ":" in val_str:
+                return val_str
+            try:
+                secs = int(float(val_str))
+                m, s = divmod(secs, 60)
+                h, m = divmod(m, 60)
+                return f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+            except Exception:
+                return "00:00"
+
         # If it's a non-YouTube platform URL, resolve details first
         if is_url and platform != "youtube":
             try:
@@ -405,7 +425,13 @@ class YouTube:
                                 vidid = dl_match.group(1)
 
                             title = data.get("title", "Track")
-                            duration = str(data.get("duration", "00:00"))
+                            dur_raw = (
+                                data.get("duration_min")
+                                or data.get("duration_string")
+                                or data.get("duration_sec")
+                                or data.get("duration")
+                            )
+                            duration = _fmt_duration(dur_raw)
                             thumb = data.get("thumb") or data.get("thumbnail", "")
 
                             # If vidid is not a standard 11-char YouTube ID, resolve to YouTube
@@ -413,9 +439,17 @@ class YouTube:
                                 yt_match = await self.search(f"{title} {data.get('artist', '')}".strip(), m_id, video=video)
                                 if yt_match:
                                     yt_match.title = title[:25]
+                                    if duration and duration != "00:00":
+                                        yt_match.duration = duration
+                                        yt_match.duration_sec = utils.to_seconds(duration)
                                     if thumb:
                                         yt_match.thumbnail = thumb
                                     return yt_match
+
+                            if not duration or duration == "00:00":
+                                yt_match = await self.search(title, m_id, video=video)
+                                if yt_match:
+                                    duration = yt_match.duration
 
                             ytlink = f"https://www.youtube.com/watch?v={vidid}"
                             return Track(
@@ -445,16 +479,30 @@ class YouTube:
                             vidid = dl_match.group(1) if dl_match else (data.get("id") if data.get("platform") == "youtube" else None)
 
                             title = data.get("title", "Track")
-                            duration = str(data.get("duration", "00:00"))
+                            dur_raw = (
+                                data.get("duration_string")
+                                or data.get("duration_min")
+                                or data.get("duration_sec")
+                                or data.get("duration")
+                            )
+                            duration = _fmt_duration(dur_raw)
                             thumb = data.get("thumbnail") or data.get("thumb", "")
 
                             if not vidid or not re.match(r"^[A-Za-z0-9_-]{11}$", vidid):
                                 yt_match = await self.search(title, m_id, video=video)
                                 if yt_match:
                                     yt_match.title = title[:25]
+                                    if duration and duration != "00:00":
+                                        yt_match.duration = duration
+                                        yt_match.duration_sec = utils.to_seconds(duration)
                                     if thumb:
                                         yt_match.thumbnail = thumb
                                     return yt_match
+
+                            if not duration or duration == "00:00":
+                                yt_match = await self.search(title, m_id, video=video)
+                                if yt_match:
+                                    duration = yt_match.duration
 
                             ytlink = f"https://www.youtube.com/watch?v={vidid}"
                             return Track(
@@ -653,38 +701,77 @@ class YouTube:
     async def get_related(
         self, video_id: str, video: bool = False, max_duration: int = 0
     ) -> Track | None:
+        client = await self.get_client()
+
+        # 1. Primary: Use API /api/mix for high quality autoplay recommendations
         try:
-            _results = await Recommendations.getRelated(video_id)
-            if not isinstance(_results, dict):
-                return None
-            results = _results.get("result")
-            if results:
-                videos = [r for r in results if r.get("type") == "video"]
-
-                if max_duration:
-                    videos = [
-                        v
-                        for v in videos
-                        if utils.to_seconds(v.get("duration") or "00:00")
-                        <= max_duration
-                    ]
-
-                if not videos:
-                    return None
-                data = random.choice(videos)
-                return Track(
-                    id=data.get("id"),
-                    channel_name=data.get("channel", {}).get("name"),
-                    duration=data.get("duration"),
-                    duration_sec=utils.to_seconds(data.get("duration") or "00:00"),
-                    title=data.get("title")[:25],
-                    thumbnail=data.get("thumbnails", [{}])[-1].get("url").split("?")[0],
-                    url=data.get("link"),
-                    user="Autoplay",
-                    video=video,
-                )
+            params = self._get_params({"query": video_id, "limit": 10})
+            async with client.get(f"{self.api_url}/api/mix", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    results = data.get("result", [])
+                    if results:
+                        # Filter out the current track to ensure continuous playback
+                        candidates = [
+                            r for r in results
+                            if r.get("id") and r.get("id") != video_id
+                        ]
+                        if max_duration:
+                            candidates = [
+                                c for c in candidates
+                                if utils.to_seconds(c.get("duration") or "00:00") <= max_duration
+                            ]
+                        if candidates:
+                            item = random.choice(candidates)
+                            thumb = ""
+                            if item.get("thumbnails") and isinstance(item["thumbnails"], list):
+                                thumb = item["thumbnails"][0].get("url", "")
+                            elif item.get("thumbnail"):
+                                thumb = item.get("thumbnail")
+                            return Track(
+                                id=item.get("id"),
+                                channel_name=item.get("author", {}).get("name") if isinstance(item.get("author"), dict) else "Autoplay",
+                                duration=item.get("duration", "00:00"),
+                                duration_sec=utils.to_seconds(item.get("duration") or "00:00"),
+                                title=item.get("title", "Track")[:25],
+                                thumbnail=thumb.split("?")[0] if thumb else f"https://i.ytimg.com/vi/{item.get('id')}/hqdefault.jpg",
+                                url=item.get("link") or f"https://www.youtube.com/watch?v={item.get('id')}",
+                                user="Autoplay",
+                                video=video,
+                            )
         except Exception as e:
-            logger.error(f"Error fetching related videos: {e}")
+            logger.error(f"Error fetching autoplay from /api/mix: {e}")
+
+        # 2. Secondary fallback: py_yt Recommendations
+        try:
+            get_rel = getattr(Recommendations, "get_related", None) or getattr(Recommendations, "getRelated", None)
+            if get_rel:
+                _results = await get_rel(video_id)
+                if isinstance(_results, dict):
+                    results = _results.get("result", []) or _results.get("videos", [])
+                    if results:
+                        videos = [r for r in results if r.get("type") == "video" and r.get("id") != video_id]
+                        if max_duration:
+                            videos = [
+                                v for v in videos
+                                if utils.to_seconds(v.get("duration") or "00:00") <= max_duration
+                            ]
+                        if videos:
+                            data = random.choice(videos)
+                            return Track(
+                                id=data.get("id"),
+                                channel_name=data.get("channel", {}).get("name", "Autoplay"),
+                                duration=data.get("duration"),
+                                duration_sec=utils.to_seconds(data.get("duration") or "00:00"),
+                                title=data.get("title")[:25],
+                                thumbnail=data.get("thumbnails", [{}])[-1].get("url").split("?")[0],
+                                url=data.get("link"),
+                                user="Autoplay",
+                                video=video,
+                            )
+        except Exception as e:
+            logger.error(f"Error fetching related videos via py_yt: {e}")
+
         return None
 
     async def download(
