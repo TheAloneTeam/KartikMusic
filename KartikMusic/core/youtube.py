@@ -165,7 +165,6 @@ class YouTube:
         ("iqiyi", r"(?:iq\.com|iqiyi\.com)"),
         ("mxplayer", r"mxplayer\.in"),
         ("imdb", r"imdb\.com"),
-
         # --- Social Media & Short-form Video ---
         ("instagram", r"(?:instagram\.com|instagr\.am)"),
         ("tiktok", r"(?:tiktok\.com|douyin\.com)"),
