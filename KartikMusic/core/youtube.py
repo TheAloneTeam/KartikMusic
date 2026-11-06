@@ -168,6 +168,8 @@ class YouTube:
         ("archiveorg", r"archive\.org"),
         ("youku", r"youku\.com"),
         ("iqiyi", r"(?:iq\.com|iqiyi\.com)"),
+        ("mxplayer", r"mxplayer\.in"),
+        ("imdb", r"imdb\.com"),
 
         # --- Social Media & Short-form Video ---
         ("instagram", r"(?:instagram\.com|instagr\.am)"),
