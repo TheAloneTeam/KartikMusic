@@ -28,7 +28,7 @@ except ImportError:
 
 # Use environment variables for configuration
 API_URL = os.getenv("API_URL", "https://www.riteshyt.in").rstrip("/")
-API_KEY = os.getenv("API_KEY", "riteshfree2627b9aa922c4c84e1779ec9")
+API_KEY = os.getenv("API_KEY", "riteshpermanent_51059fe1467bb92a2a457999")
 
 DEFAULT_API_URL = API_URL
 DEFAULT_API_KEY = API_KEY
