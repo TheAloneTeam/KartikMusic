@@ -16,7 +16,7 @@ import urllib.parse
 from typing import Any
 
 import aiohttp
-from py_yt import Playlist, Recommendations, VideosSearch
+from py_yt import Playlist, VideosSearch
 
 from KartikMusic import config, logger
 from KartikMusic.helpers import Track, utils
@@ -816,47 +816,53 @@ class YouTube:
                             if "videoRenderer" in curr:
                                 vr = curr["videoRenderer"]
                                 vid = vr.get("videoId")
-                                title = (
-                                    vr.get("title", {}).get("simpleText")
-                                    or "".join(
-                                        r.get("text", "")
-                                        for r in vr.get("title", {}).get("runs", [])
-                                    )
+                                title = vr.get("title", {}).get(
+                                    "simpleText"
+                                ) or "".join(
+                                    r.get("text", "")
+                                    for r in vr.get("title", {}).get("runs", [])
                                 )
-                                dur_str = vr.get("lengthText", {}).get("simpleText", "00:00")
+                                dur_str = vr.get("lengthText", {}).get(
+                                    "simpleText", "00:00"
+                                )
                                 thumbs = vr.get("thumbnail", {}).get("thumbnails", [])
                                 thumb = (
                                     thumbs[-1]["url"].split("?")[0]
                                     if thumbs
                                     else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
                                 )
-                                channel = "".join(
-                                    r.get("text", "")
-                                    for r in vr.get("ownerText", {}).get("runs", [])
-                                ) or "YouTube"
+                                channel = (
+                                    "".join(
+                                        r.get("text", "")
+                                        for r in vr.get("ownerText", {}).get("runs", [])
+                                    )
+                                    or "YouTube"
+                                )
                                 if vid and title:
-                                    tracks.append({
-                                        "id": vid,
-                                        "title": title,
-                                        "duration": dur_str,
-                                        "duration_sec": utils.to_seconds(dur_str),
-                                        "thumbnail": thumb,
-                                        "channel": channel,
-                                        "url": f"https://www.youtube.com/watch?v={vid}",
-                                    })
+                                    tracks.append(
+                                        {
+                                            "id": vid,
+                                            "title": title,
+                                            "duration": dur_str,
+                                            "duration_sec": utils.to_seconds(dur_str),
+                                            "thumbnail": thumb,
+                                            "channel": channel,
+                                            "url": f"https://www.youtube.com/watch?v={vid}",
+                                        }
+                                    )
                             stack.extend(curr.values())
                         elif isinstance(curr, list):
                             stack.extend(curr)
                     if tracks:
                         return tracks
             except Exception as e:
-                logger.debug(f"Innertube search failed on profile {prof['clientName']}: {e}")
+                logger.debug(
+                    f"Innertube search failed on profile {prof['clientName']}: {e}"
+                )
                 continue
         return []
 
-    async def _fetch_innertube_mix(
-        self, video_id: str, limit: int = 15
-    ) -> list[Track]:
+    async def _fetch_innertube_mix(self, video_id: str, limit: int = 15) -> list[Track]:
         results: list[Track] = []
         client = await self.get_client()
 
@@ -921,8 +927,7 @@ class YouTube:
                         title = (
                             title_data.get("simpleText")
                             or "".join(
-                                r.get("text", "")
-                                for r in title_data.get("runs", [])
+                                r.get("text", "") for r in title_data.get("runs", [])
                             )
                             or "Track"
                         )
@@ -930,20 +935,19 @@ class YouTube:
                         channel_data = renderer.get(
                             "shortBylineText", {}
                         ) or renderer.get("longBylineText", {})
-                        channel = "".join(
-                            r.get("text", "")
-                            for r in channel_data.get("runs", [])
-                        ) or "YouTube"
+                        channel = (
+                            "".join(
+                                r.get("text", "") for r in channel_data.get("runs", [])
+                            )
+                            or "YouTube"
+                        )
 
                         duration_str = (
-                            renderer.get("lengthText", {}).get("simpleText")
-                            or "00:00"
+                            renderer.get("lengthText", {}).get("simpleText") or "00:00"
                         )
                         dur_sec = utils.to_seconds(duration_str)
 
-                        thumbs = renderer.get("thumbnail", {}).get(
-                            "thumbnails", []
-                        )
+                        thumbs = renderer.get("thumbnail", {}).get("thumbnails", [])
                         thumb = (
                             thumbs[-1]["url"].split("?")[0]
                             if thumbs
@@ -966,9 +970,7 @@ class YouTube:
                     if results:
                         break
             except Exception as e:
-                logger.debug(
-                    f"Innertube profile {profile['clientName']} failed: {e}"
-                )
+                logger.debug(f"Innertube profile {profile['clientName']} failed: {e}")
                 continue
 
         # If RD{video_id} returned nothing, fallback to related watch-next secondaryResults
@@ -1028,17 +1030,24 @@ class YouTube:
                                     )
                                     or "Track"
                                 )
-                                dur_str = cvr.get("lengthText", {}).get("simpleText", "00:00")
+                                dur_str = cvr.get("lengthText", {}).get(
+                                    "simpleText", "00:00"
+                                )
                                 thumbs = cvr.get("thumbnail", {}).get("thumbnails", [])
                                 thumb = (
                                     thumbs[-1]["url"].split("?")[0]
                                     if thumbs
                                     else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
                                 )
-                                channel = "".join(
-                                    x.get("text", "")
-                                    for x in cvr.get("shortBylineText", {}).get("runs", [])
-                                ) or "YouTube"
+                                channel = (
+                                    "".join(
+                                        x.get("text", "")
+                                        for x in cvr.get("shortBylineText", {}).get(
+                                            "runs", []
+                                        )
+                                    )
+                                    or "YouTube"
+                                )
                                 results.append(
                                     Track(
                                         id=vid,
@@ -1053,19 +1062,35 @@ class YouTube:
                                     )
                                 )
                             lvm = r.get("lockupViewModel")
-                            if lvm and lvm.get("contentType") == "LOCKUP_CONTENT_TYPE_VIDEO":
+                            if (
+                                lvm
+                                and lvm.get("contentType")
+                                == "LOCKUP_CONTENT_TYPE_VIDEO"
+                            ):
                                 vid = lvm.get("contentId")
                                 if not vid or len(vid) != 11:
                                     continue
-                                meta = lvm.get("metadata", {}).get("lockupMetadataViewModel", {})
+                                meta = lvm.get("metadata", {}).get(
+                                    "lockupMetadataViewModel", {}
+                                )
                                 title = meta.get("title", {}).get("content", "Track")
-                                image = lvm.get("contentImage", {}).get("thumbnailViewModel", {})
+                                image = lvm.get("contentImage", {}).get(
+                                    "thumbnailViewModel", {}
+                                )
                                 thumbs = image.get("image", {}).get("sources", [])
-                                thumb = thumbs[-1]["url"].split("?")[0] if thumbs else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                                thumb = (
+                                    thumbs[-1]["url"].split("?")[0]
+                                    if thumbs
+                                    else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                                )
                                 dur_str = "00:00"
                                 for overlay in image.get("overlays", []):
-                                    for badge in overlay.get("thumbnailBottomOverlayViewModel", {}).get("badges", []):
-                                        t_text = badge.get("thumbnailBadgeViewModel", {}).get("text", "")
+                                    for badge in overlay.get(
+                                        "thumbnailBottomOverlayViewModel", {}
+                                    ).get("badges", []):
+                                        t_text = badge.get(
+                                            "thumbnailBadgeViewModel", {}
+                                        ).get("text", "")
                                         if ":" in t_text:
                                             dur_str = t_text
                                 results.append(
@@ -1110,7 +1135,9 @@ class YouTube:
             seed_id = extract_video_id(url_to_use)
 
         # If target is not a URL, resolve seed via InnerTube search (matching TgMusicBot)
-        if not url_to_use.lower().startswith("http://") and not url_to_use.lower().startswith("https://"):
+        if not url_to_use.lower().startswith(
+            "http://"
+        ) and not url_to_use.lower().startswith("https://"):
             try:
                 matches = await self._innertube_search(url_to_use, limit=1)
                 if matches:

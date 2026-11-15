@@ -34,7 +34,9 @@ async def _autoplay(_, m: types.Message):
         elif arg in ["disable", "off"]:
             await db.set_autoplay(m.chat.id, False)
             queue.clear_autoplay_history(m.chat.id)
-            return await m.reply_text(m.lang["autoplay_off"].format(m.from_user.mention))
+            return await m.reply_text(
+                m.lang["autoplay_off"].format(m.from_user.mention)
+            )
 
     state = await db.get_autoplay(m.chat.id)
     text = (

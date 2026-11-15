@@ -406,7 +406,9 @@ class TgCall(PyTgCalls):
                 )
             else:
                 text = (
-                    _lang["play_skipped"].format(skip_user) + "\n\n" + _lang["play_next"]
+                    _lang["play_skipped"].format(skip_user)
+                    + "\n\n"
+                    + _lang["play_next"]
                     if skip_user
                     else _lang["play_next"]
                 )

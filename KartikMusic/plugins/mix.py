@@ -51,7 +51,9 @@ async def mix_hndlr(_, m: types.Message) -> None:
     limit = int(getattr(config, "AUTO_PLAY_LIMIT", 10))
     tracks = await yt.get_recommendations(target, limit=limit)
     if not tracks:
-        return await sent.edit_text("❌ No mix tracks found. Try with another song or URL.")
+        return await sent.edit_text(
+            "❌ No mix tracks found. Try with another song or URL."
+        )
 
     mention = m.from_user.mention
     for t in tracks:
