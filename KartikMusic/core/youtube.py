@@ -18,7 +18,7 @@ from typing import Any
 import aiohttp
 from py_yt import Playlist, Recommendations, VideosSearch
 
-from KartikMusic import logger
+from KartikMusic import config, logger
 from KartikMusic.helpers import Track, utils
 
 try:
@@ -32,6 +32,48 @@ API_KEY = os.getenv("API_KEY", "riteshpermanent_51059fe1467bb92a2a457999")
 
 DEFAULT_API_URL = API_URL
 DEFAULT_API_KEY = API_KEY
+
+VIDEO_ID_REGEX = [
+    re.compile(
+        r"(?:youtube\.com/(?:watch\?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})",
+        re.IGNORECASE,
+    ),
+    re.compile(r"(?:v=|\/)([0-9A-Za-z_-]{11})"),
+]
+
+YT_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+YT_PROFILES = [
+    {
+        "clientName": "WEB",
+        "clientVersion": "2.20250101.01.00",
+        "clientId": "1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    },
+    {
+        "clientName": "MWEB",
+        "clientVersion": "2.20250101.01.00",
+        "clientId": "2",
+        "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1",
+    },
+    {
+        "clientName": "ANDROID",
+        "clientVersion": "19.09.37",
+        "clientId": "3",
+        "userAgent": "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US) gzip",
+    },
+]
+
+
+def extract_video_id(url_or_id: str) -> str:
+    if not url_or_id:
+        return ""
+    val = str(url_or_id).strip()
+    if len(val) == 11 and not any(c in val for c in " /?:&=#"):
+        return val
+    for reg in VIDEO_ID_REGEX:
+        if m := reg.search(val):
+            return m.group(1)
+    return ""
 
 
 def _safe_search_ytdlp(query: str) -> dict[str, Any]:
@@ -716,34 +758,160 @@ class YouTube:
             logger.error(f"Prefetch failed for {link}: {e}")
         return False
 
-    async def get_related(
-        self, video_id: str, video: bool = False, max_duration: int = 0
-    ) -> Track | None:
+    async def _fetch_innertube_mix(
+        self, video_id: str, limit: int = 15
+    ) -> list[Track]:
+        results: list[Track] = []
         client = await self.get_client()
 
-        # 1. Primary: Use API /api/mix for high quality autoplay recommendations
-        try:
-            params = self._get_params({"query": video_id, "limit": 10})
-            async with client.get(f"{self.api_url}/api/mix", params=params) as resp:
-                if resp.status == 200:
+        for profile in YT_PROFILES:
+            try:
+                url = f"https://www.youtube.com/youtubei/v1/next?key={YT_API_KEY}"
+                headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": profile["userAgent"],
+                    "Accept": "*/*",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "X-YouTube-Client-Name": profile["clientId"],
+                    "X-YouTube-Client-Version": profile["clientVersion"],
+                }
+                payload = {
+                    "context": {
+                        "client": {
+                            "clientName": profile["clientName"],
+                            "clientVersion": profile["clientVersion"],
+                            "hl": "en",
+                            "gl": "US",
+                        }
+                    },
+                    "playlistId": f"RD{video_id}",
+                }
+                async with client.post(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=8),
+                ) as resp:
+                    if resp.status != 200:
+                        continue
                     data = await resp.json()
-                    results = data.get("result", [])
+
+                    contents = (
+                        data.get("contents", {})
+                        .get("twoColumnWatchNextResults", {})
+                        .get("playlist", {})
+                        .get("playlist", {})
+                        .get("contents", [])
+                    )
+                    if not contents:
+                        continue
+
+                    for item in contents:
+                        renderer = item.get("playlistPanelVideoRenderer")
+                        if not renderer:
+                            continue
+                        vid = renderer.get("videoId")
+                        if not vid:
+                            continue
+
+                        title_data = renderer.get("title", {})
+                        title = (
+                            title_data.get("simpleText")
+                            or "".join(
+                                r.get("text", "")
+                                for r in title_data.get("runs", [])
+                            )
+                            or "Track"
+                        )
+
+                        channel_data = renderer.get(
+                            "shortBylineText", {}
+                        ) or renderer.get("longBylineText", {})
+                        channel = "".join(
+                            r.get("text", "")
+                            for r in channel_data.get("runs", [])
+                        ) or "YouTube"
+
+                        duration_str = (
+                            renderer.get("lengthText", {}).get("simpleText")
+                            or "00:00"
+                        )
+                        dur_sec = utils.to_seconds(duration_str)
+
+                        thumbs = renderer.get("thumbnail", {}).get(
+                            "thumbnails", []
+                        )
+                        thumb = (
+                            thumbs[-1]["url"].split("?")[0]
+                            if thumbs
+                            else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                        )
+
+                        results.append(
+                            Track(
+                                id=vid,
+                                channel_name=channel,
+                                duration=duration_str,
+                                duration_sec=dur_sec,
+                                title=title,
+                                thumbnail=thumb,
+                                url=f"https://www.youtube.com/watch?v={vid}",
+                                user="Autoplay",
+                                video=False,
+                            )
+                        )
                     if results:
-                        # Filter out the current track to ensure continuous playback
-                        candidates = [
-                            r
-                            for r in results
-                            if r.get("id") and r.get("id") != video_id
-                        ]
-                        if max_duration:
-                            candidates = [
-                                c
-                                for c in candidates
-                                if utils.to_seconds(c.get("duration") or "00:00")
-                                <= max_duration
-                            ]
-                        if candidates:
-                            item = random.choice(candidates)
+                        break
+            except Exception as e:
+                logger.debug(
+                    f"Innertube profile {profile['clientName']} failed: {e}"
+                )
+                continue
+
+        return results
+
+    async def get_recommendations(
+        self, target: str, limit: int | None = None
+    ) -> list[Track]:
+        """
+        Fetch recommended tracks for a given track URL, ID, or query, matching TgMusicBot's GetRecommendations.
+        1. Native YouTube Mix via Innertube (/youtubei/v1/next RD{id})
+        2. API recommendations (/api/mix)
+        3. py_yt Recommendations fallback
+        """
+        if not limit or limit <= 0:
+            limit = getattr(config, "AUTO_PLAY_LIMIT", 15)
+        seed_id = extract_video_id(target)
+        if not seed_id and target:
+            try:
+                res = await self.search(target, limit=1)
+                if res and isinstance(res, list) and res[0].get("id"):
+                    seed_id = res[0]["id"]
+            except Exception:
+                pass
+
+        if not seed_id:
+            return []
+
+        # 1. Native YouTube Mix
+        tracks = await self._fetch_innertube_mix(seed_id, limit=limit)
+
+        # 2. API /api/mix fallback
+        if not tracks:
+            try:
+                client = await self.get_client()
+                params = self._get_params({"query": seed_id, "limit": limit})
+                async with client.get(
+                    f"{self.api_url}/api/mix",
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=8),
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        for item in data.get("result", []):
+                            vid = item.get("id")
+                            if not vid:
+                                continue
                             thumb = ""
                             if item.get("thumbnails") and isinstance(
                                 item["thumbnails"], list
@@ -751,72 +919,156 @@ class YouTube:
                                 thumb = item["thumbnails"][0].get("url", "")
                             elif item.get("thumbnail"):
                                 thumb = item.get("thumbnail")
-                            return Track(
-                                id=item.get("id"),
-                                channel_name=item.get("author", {}).get("name")
-                                if isinstance(item.get("author"), dict)
-                                else "Autoplay",
-                                duration=item.get("duration", "00:00"),
-                                duration_sec=utils.to_seconds(
-                                    item.get("duration") or "00:00"
-                                ),
-                                title=item.get("title", "Track")[:25],
-                                thumbnail=thumb.split("?")[0]
+                            thumb = (
+                                thumb.split("?")[0]
                                 if thumb
-                                else f"https://i.ytimg.com/vi/{item.get('id')}/hqdefault.jpg",
-                                url=item.get("link")
-                                or f"https://www.youtube.com/watch?v={item.get('id')}",
-                                user="Autoplay",
-                                video=video,
+                                else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
                             )
-        except Exception as e:
-            logger.error(f"Error fetching autoplay from /api/mix: {e}")
-
-        # 2. Secondary fallback: py_yt Recommendations
-        try:
-            get_rel = getattr(Recommendations, "get_related", None) or getattr(
-                Recommendations, "getRelated", None
-            )
-            if get_rel:
-                _results = await get_rel(video_id)
-                if isinstance(_results, dict):
-                    results = _results.get("result", []) or _results.get("videos", [])
-                    if results:
-                        videos = [
-                            r
-                            for r in results
-                            if r.get("type") == "video" and r.get("id") != video_id
-                        ]
-                        if max_duration:
-                            videos = [
-                                v
-                                for v in videos
-                                if utils.to_seconds(v.get("duration") or "00:00")
-                                <= max_duration
-                            ]
-                        if videos:
-                            data = random.choice(videos)
-                            return Track(
-                                id=data.get("id"),
-                                channel_name=data.get("channel", {}).get(
-                                    "name", "Autoplay"
-                                ),
-                                duration=data.get("duration"),
-                                duration_sec=utils.to_seconds(
-                                    data.get("duration") or "00:00"
-                                ),
-                                title=data.get("title")[:25],
-                                thumbnail=data.get("thumbnails", [{}])[-1]
-                                .get("url")
-                                .split("?")[0],
-                                url=data.get("link"),
-                                user="Autoplay",
-                                video=video,
+                            dur = item.get("duration", "00:00")
+                            channel = (
+                                item.get("author", {}).get("name")
+                                if isinstance(item.get("author"), dict)
+                                else item.get("channel", {}).get("name", "YouTube")
+                                if isinstance(item.get("channel"), dict)
+                                else "YouTube"
                             )
-        except Exception as e:
-            logger.error(f"Error fetching related videos via py_yt: {e}")
+                            tracks.append(
+                                Track(
+                                    id=vid,
+                                    channel_name=channel,
+                                    duration=dur,
+                                    duration_sec=utils.to_seconds(dur),
+                                    title=item.get("title", "Track"),
+                                    thumbnail=thumb,
+                                    url=item.get("link")
+                                    or f"https://www.youtube.com/watch?v={vid}",
+                                    user="Autoplay",
+                                    video=False,
+                                )
+                            )
+            except Exception as e:
+                logger.debug(f"API /api/mix failed: {e}")
 
-        return None
+        # 3. Secondary py_yt fallback
+        if not tracks:
+            try:
+                get_rel = getattr(Recommendations, "get_related", None) or getattr(
+                    Recommendations, "getRelated", None
+                )
+                if get_rel:
+                    _results = await get_rel(seed_id)
+                    if isinstance(_results, dict):
+                        videos = _results.get("result", []) or _results.get(
+                            "videos", []
+                        )
+                        for data in videos:
+                            vid = data.get("id")
+                            if not vid:
+                                continue
+                            dur = data.get("duration", "00:00")
+                            thumbs = data.get("thumbnails", [{}])
+                            thumb = (
+                                thumbs[-1].get("url", "").split("?")[0]
+                                if thumbs
+                                else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                            )
+                            tracks.append(
+                                Track(
+                                    id=vid,
+                                    channel_name=data.get("channel", {}).get(
+                                        "name", "YouTube"
+                                    ),
+                                    duration=dur,
+                                    duration_sec=utils.to_seconds(dur),
+                                    title=data.get("title", "Track"),
+                                    thumbnail=thumb,
+                                    url=data.get("link")
+                                    or f"https://www.youtube.com/watch?v={vid}",
+                                    user="Autoplay",
+                                    video=False,
+                                )
+                            )
+            except Exception as e:
+                logger.debug(f"py_yt Recommendations failed: {e}")
+
+        # Filter out seed ID and duplicates preserving order
+        seen = set()
+        unique_tracks: list[Track] = []
+        for t in tracks:
+            if t.id == seed_id or t.url == target:
+                continue
+            if t.id in seen:
+                continue
+            seen.add(t.id)
+            unique_tracks.append(t)
+            if len(unique_tracks) >= limit:
+                break
+
+        return unique_tracks
+
+    async def get_related(
+        self,
+        video_id: str,
+        chat_id: int | None = None,
+        video: bool = False,
+        max_duration: int = 0,
+    ) -> Track | None:
+        """
+        Get the next recommended track for autoplay, matching TgMusicBot's handleAutoplay:
+        - Retrieves recommendations using native YouTube Mix / API
+        - Filters out already played tracks using chat autoplay history
+        - Enforces duration limits
+        - Randomly shuffles candidates
+        - Updates autoplay history
+        """
+        from KartikMusic.helpers import queue
+
+        history = queue.get_autoplay_history(chat_id) if chat_id else []
+
+        tracks = await self.get_recommendations(video_id, limit=20)
+        if not tracks:
+            return None
+
+        candidates: list[Track] = []
+        for track in tracks:
+            if (
+                track.id == video_id
+                or track.url == video_id
+                or track.id in history
+                or track.url in history
+            ):
+                continue
+            if max_duration > 0 and track.duration_sec > max_duration:
+                continue
+            candidates.append(track)
+
+        # If all candidates have been played in this session, clear history
+        # so music playback continues seamlessly without repeating immediately
+        if not candidates:
+            if chat_id:
+                queue.clear_autoplay_history(chat_id)
+            candidates = [
+                track
+                for track in tracks
+                if track.id != video_id
+                and track.url != video_id
+                and (max_duration <= 0 or track.duration_sec <= max_duration)
+            ]
+
+        if not candidates:
+            return None
+
+        # Randomly shuffle candidates like TgMusicBot
+        random.shuffle(candidates)
+        next_track = candidates[0]
+
+        # Update autoplay history
+        if chat_id:
+            queue.add_autoplay_history(chat_id, video_id, next_track.id)
+
+        next_track.video = video
+        next_track.user = "Autoplay"
+        return next_track
 
     async def download(
         self,

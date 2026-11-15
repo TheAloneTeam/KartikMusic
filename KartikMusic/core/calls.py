@@ -74,9 +74,11 @@ class TgCall(PyTgCalls):
                     next_media = queue.get_next(chat_id, check=True)
                     if not next_media and await db.get_autoplay(chat_id):
                         if isinstance(media, Track):
-                            max_duration = min(int(media.duration_sec * 1.5), 900)
                             next_media = await yt.get_related(
-                                media.id, video=media.video, max_duration=max_duration
+                                media.id,
+                                chat_id=chat_id,
+                                video=media.video,
+                                max_duration=config.DURATION_LIMIT,
                             )
                             if next_media:
                                 queue.add(chat_id, next_media)
@@ -255,6 +257,9 @@ class TgCall(PyTgCalls):
         await self.play_media(chat_id, msg, media)
 
     async def play_next(self, chat_id: int, skip_user: str | None = None) -> None:
+        if task := self.prefetch_tasks.pop(chat_id, None):
+            task.cancel()
+
         if loop := await db.get_loop(chat_id):
             await db.set_loop(chat_id, loop - 1)
             return await self.replay(chat_id)
@@ -279,14 +284,14 @@ class TgCall(PyTgCalls):
                     else:
                         msg = await app.send_message(chat_id, _lang["autoplay_next"])
 
-                    # Set max duration for autoplay tracks based on current song
-                    # but capped at 15 minutes to avoid extremely long tracks
                     # Use existing next item if it was pre-fetched
                     media = queue.get_current(chat_id)
                     if not media:
-                        max_duration = min(int(current.duration_sec * 1.5), 900)
                         media = await yt.get_related(
-                            current.id, video=current.video, max_duration=max_duration
+                            current.id,
+                            chat_id=chat_id,
+                            video=current.video,
+                            max_duration=config.DURATION_LIMIT,
                         )
                         if media:
                             queue.add(chat_id, media)

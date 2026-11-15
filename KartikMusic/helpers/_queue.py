@@ -19,10 +19,31 @@ MediaItem = Union[Media, Track]
 class Queue:
     def __init__(self):
         self.queues: dict[int, deque[MediaItem]] = defaultdict(deque)
+        self.autoplay_history: dict[int, list[str]] = defaultdict(list)
+
+    def get_autoplay_history(self, chat_id: int) -> list[str]:
+        """Return a copy of the autoplay history for the chat."""
+        return list(self.autoplay_history[chat_id])
+
+    def add_autoplay_history(self, chat_id: int, *track_ids: str) -> None:
+        """Add track IDs to the autoplay history for the chat without duplicates."""
+        history = self.autoplay_history[chat_id]
+        for tid in track_ids:
+            if tid and tid not in history:
+                history.append(tid)
+        if len(history) > 100:
+            self.autoplay_history[chat_id] = history[-100:]
+
+    def clear_autoplay_history(self, chat_id: int) -> None:
+        """Clear the autoplay history for the chat."""
+        if chat_id in self.autoplay_history:
+            self.autoplay_history[chat_id].clear()
 
     def add(self, chat_id: int, item: MediaItem) -> int:
         """Add an item to the queue and return its position (1-based)."""
         self.queues[chat_id].append(item)
+        if getattr(item, "user", None) != "Autoplay":
+            self.clear_autoplay_history(chat_id)
         return len(self.queues[chat_id]) - 1
 
     def check_item(self, chat_id: int, item_id: str) -> tuple[int, MediaItem | None]:
@@ -74,3 +95,4 @@ class Queue:
     def clear(self, chat_id: int) -> None:
         """Clear the entire queue."""
         self.queues[chat_id].clear()
+        self.clear_autoplay_history(chat_id)

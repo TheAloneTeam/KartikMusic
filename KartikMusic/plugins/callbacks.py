@@ -155,6 +155,8 @@ async def _controls(_, query: types.CallbackQuery):
         if action == "cautoplay":
             autoplay = not await db.get_autoplay(chat_id)
             await db.set_autoplay(chat_id, autoplay)
+            if not autoplay:
+                queue.clear_autoplay_history(chat_id)
         elif action == "cthumb":
             thumb = not await db.get_thumb_mode(chat_id)
             await db.set_thumb_mode(chat_id, thumb)
@@ -326,6 +328,8 @@ async def _settings_cb(_, query: types.CallbackQuery):
     elif cmd[1] == "autoplay":
         _autoplay = not _autoplay
         await db.set_autoplay(chat_id, _autoplay)
+        if not _autoplay:
+            queue.clear_autoplay_history(chat_id)
     elif cmd[1] == "vclog":
         _vclog = not _vclog
         await db.set_vclogger(chat_id, _vclog)
