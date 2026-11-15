@@ -12,7 +12,7 @@ from pyrogram import filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from KartikMusic import app, db, lang
-from KartikMusic.helpers import can_manage_vc, queue
+from KartikMusic.helpers import can_manage_vc 
 
 
 def autoplay_markup(state: bool) -> InlineKeyboardMarkup:
