@@ -1191,7 +1191,7 @@ class YouTube:
         - Randomly shuffles candidates
         - Updates autoplay history
         """
-        from KartikMusic.helpers import queue
+        from KartikMusic import queue
 
         history = queue.get_autoplay_history(chat_id) if chat_id else []
 
