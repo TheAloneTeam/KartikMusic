@@ -25,6 +25,13 @@ class Queue:
         """Return a copy of the autoplay history for the chat."""
         return list(self.autoplay_history[chat_id])
 
+    def get_last_autoplay_track_id(self, chat_id: int) -> str:
+        """Return the ID or URL of the most recently played/queued track."""
+        history = self.autoplay_history.get(chat_id)
+        if not history:
+            return ""
+        return history[-1]
+
     def add_autoplay_history(self, chat_id: int, *track_ids: str) -> None:
         """Add track IDs to the autoplay history for the chat without duplicates."""
         history = self.autoplay_history[chat_id]
@@ -80,17 +87,27 @@ class Queue:
         if check:
             return self.queues[chat_id][1] if len(self.queues[chat_id]) > 1 else None
 
-        self.queues[chat_id].popleft()
+        removed = self.queues[chat_id].popleft()
+        if removed:
+            tid = getattr(removed, "id", None) or getattr(removed, "url", None)
+            if tid and tid not in self.autoplay_history[chat_id]:
+                self.autoplay_history[chat_id].append(tid)
         return self.queues[chat_id][0] if self.queues[chat_id] else None
 
     def get_queue(self, chat_id: int) -> list[MediaItem]:
         """Return the full queue including the currently playing item."""
         return list(self.queues[chat_id])
 
-    def remove_current(self, chat_id: int) -> None:
+    def remove_current(self, chat_id: int) -> MediaItem | None:
         """Remove the currently playing item only (if exists)."""
         if self.queues[chat_id]:
-            self.queues[chat_id].popleft()
+            removed = self.queues[chat_id].popleft()
+            if removed:
+                tid = getattr(removed, "id", None) or getattr(removed, "url", None)
+                if tid and tid not in self.autoplay_history[chat_id]:
+                    self.autoplay_history[chat_id].append(tid)
+            return removed
+        return None
 
     def clear(self, chat_id: int) -> None:
         """Clear the entire queue."""

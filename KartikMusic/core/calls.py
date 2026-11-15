@@ -73,11 +73,30 @@ class TgCall(PyTgCalls):
                 if remaining <= 15:
                     next_media = queue.get_next(chat_id, check=True)
                     if not next_media and await db.get_autoplay(chat_id):
+                        target_track = None
                         if isinstance(media, Track):
+                            target_track = media.id or media.url
+                        else:
+                            name = (
+                                getattr(media, "name", None)
+                                or getattr(media, "title", None)
+                                or ""
+                            )
+                            channel = (
+                                getattr(media, "channel_name", None)
+                                or getattr(media, "channel", None)
+                                or ""
+                            )
+                            target_track = f"{name} {channel}".strip()
+
+                        if not target_track:
+                            target_track = queue.get_last_autoplay_track_id(chat_id)
+
+                        if target_track:
                             next_media = await yt.get_related(
-                                media.id,
+                                target_track,
                                 chat_id=chat_id,
-                                video=media.video,
+                                video=getattr(media, "video", False),
                                 max_duration=config.DURATION_LIMIT,
                             )
                             if next_media:
@@ -275,7 +294,27 @@ class TgCall(PyTgCalls):
         media = queue.get_next(chat_id)
         if not media:
             if await db.get_autoplay(chat_id):
-                if current and isinstance(current, Track):
+                last_track = ""
+                if current:
+                    if isinstance(current, Track):
+                        last_track = current.id or current.url
+                    else:
+                        name = (
+                            getattr(current, "name", None)
+                            or getattr(current, "title", None)
+                            or ""
+                        )
+                        channel = (
+                            getattr(current, "channel_name", None)
+                            or getattr(current, "channel", None)
+                            or ""
+                        )
+                        last_track = f"{name} {channel}".strip()
+
+                if not last_track:
+                    last_track = queue.get_last_autoplay_track_id(chat_id)
+
+                if last_track:
                     msg = None
                     if skip_user:
                         msg = await app.send_message(
@@ -284,21 +323,14 @@ class TgCall(PyTgCalls):
                     else:
                         msg = await app.send_message(chat_id, _lang["autoplay_next"])
 
-                    # Use existing next item if it was pre-fetched
-                    media = queue.get_current(chat_id)
-                    if not media:
-                        media = await yt.get_related(
-                            current.id,
-                            chat_id=chat_id,
-                            video=current.video,
-                            max_duration=config.DURATION_LIMIT,
-                        )
-                        if media:
-                            queue.add(chat_id, media)
-
+                    media = await yt.get_related(
+                        last_track,
+                        chat_id=chat_id,
+                        video=getattr(current, "video", False) if current else False,
+                        max_duration=config.DURATION_LIMIT,
+                    )
                     if media:
-                        # Re-fetch from queue in case it was just added to ensure
-                        # we have the object that might have file_path set by prefetcher
+                        queue.add(chat_id, media)
                         media = queue.get_current(chat_id)
 
                         if not media.file_path:
@@ -345,13 +377,20 @@ class TgCall(PyTgCalls):
                     msg = None
                 else:
                     try:
-                        text = (
-                            _lang["play_skipped"].format(skip_user)
-                            + "\n\n"
-                            + _lang["play_next"]
-                            if skip_user
-                            else _lang["play_next"]
-                        )
+                        if getattr(media, "user", None) == "Autoplay":
+                            text = (
+                                _lang["autoplay_skip"].format(skip_user)
+                                if skip_user
+                                else _lang["autoplay_next"]
+                            )
+                        else:
+                            text = (
+                                _lang["play_skipped"].format(skip_user)
+                                + "\n\n"
+                                + _lang["play_next"]
+                                if skip_user
+                                else _lang["play_next"]
+                            )
                         await msg.edit_text(text)
                     except Exception:
                         pass
@@ -359,11 +398,18 @@ class TgCall(PyTgCalls):
                 msg = None
 
         if not msg:
-            text = (
-                _lang["play_skipped"].format(skip_user) + "\n\n" + _lang["play_next"]
-                if skip_user
-                else _lang["play_next"]
-            )
+            if getattr(media, "user", None) == "Autoplay":
+                text = (
+                    _lang["autoplay_skip"].format(skip_user)
+                    if skip_user
+                    else _lang["autoplay_next"]
+                )
+            else:
+                text = (
+                    _lang["play_skipped"].format(skip_user) + "\n\n" + _lang["play_next"]
+                    if skip_user
+                    else _lang["play_next"]
+                )
             msg = await app.send_message(chat_id=chat_id, text=text)
 
         if not media.file_path:

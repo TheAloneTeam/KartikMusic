@@ -42,24 +42,37 @@ VIDEO_ID_REGEX = [
 ]
 
 YT_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+YT_CLIENT_VER = "2.20250101.01.00"
+DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+
 YT_PROFILES = [
     {
         "clientName": "WEB",
-        "clientVersion": "2.20250101.01.00",
+        "clientVersion": YT_CLIENT_VER,
         "clientId": "1",
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "origin": "https://www.youtube.com",
+        "userAgent": DEFAULT_USER_AGENT,
+    },
+    {
+        "clientName": "WEB_REMIX",
+        "clientVersion": "1.20250101.01.00",
+        "clientId": "67",
+        "origin": "https://music.youtube.com",
+        "userAgent": DEFAULT_USER_AGENT,
+    },
+    {
+        "clientName": "TVHTML5",
+        "clientVersion": "7.20250101.00.00",
+        "clientId": "7",
+        "origin": "https://www.youtube.com",
+        "userAgent": "Mozilla/5.0 (SmartHub; SMART-TV; U; Linux/SmartTV) AppleWebKit/537.42 (KHTML, like Gecko) SmartTV Safari/537.42",
     },
     {
         "clientName": "MWEB",
         "clientVersion": "2.20250101.01.00",
         "clientId": "2",
+        "origin": "https://m.youtube.com",
         "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1",
-    },
-    {
-        "clientName": "ANDROID",
-        "clientVersion": "19.09.37",
-        "clientId": "3",
-        "userAgent": "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US) gzip",
     },
 ]
 
@@ -758,6 +771,89 @@ class YouTube:
             logger.error(f"Prefetch failed for {link}: {e}")
         return False
 
+    async def _innertube_search(self, query: str, limit: int = 1) -> list[dict]:
+        """Search YouTube directly via InnerTube API, exactly matching TgMusicBot."""
+        client = await self.get_client()
+        for prof in YT_PROFILES:
+            try:
+                url = f"https://www.youtube.com/youtubei/v1/search?key={YT_API_KEY}"
+                headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": prof["userAgent"],
+                    "Accept": "*/*",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "X-YouTube-Client-Name": prof["clientId"],
+                    "X-YouTube-Client-Version": prof["clientVersion"],
+                }
+                if prof.get("origin"):
+                    headers["Origin"] = prof["origin"]
+                    headers["Referer"] = prof["origin"] + "/"
+                payload = {
+                    "context": {
+                        "client": {
+                            "clientName": prof["clientName"],
+                            "clientVersion": prof["clientVersion"],
+                            "hl": "en",
+                            "gl": "US",
+                        }
+                    },
+                    "query": query,
+                }
+                async with client.post(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=8),
+                ) as resp:
+                    if resp.status != 200:
+                        continue
+                    data = await resp.json()
+                    tracks = []
+                    stack = [data]
+                    while stack and len(tracks) < limit:
+                        curr = stack.pop()
+                        if isinstance(curr, dict):
+                            if "videoRenderer" in curr:
+                                vr = curr["videoRenderer"]
+                                vid = vr.get("videoId")
+                                title = (
+                                    vr.get("title", {}).get("simpleText")
+                                    or "".join(
+                                        r.get("text", "")
+                                        for r in vr.get("title", {}).get("runs", [])
+                                    )
+                                )
+                                dur_str = vr.get("lengthText", {}).get("simpleText", "00:00")
+                                thumbs = vr.get("thumbnail", {}).get("thumbnails", [])
+                                thumb = (
+                                    thumbs[-1]["url"].split("?")[0]
+                                    if thumbs
+                                    else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                                )
+                                channel = "".join(
+                                    r.get("text", "")
+                                    for r in vr.get("ownerText", {}).get("runs", [])
+                                ) or "YouTube"
+                                if vid and title:
+                                    tracks.append({
+                                        "id": vid,
+                                        "title": title,
+                                        "duration": dur_str,
+                                        "duration_sec": utils.to_seconds(dur_str),
+                                        "thumbnail": thumb,
+                                        "channel": channel,
+                                        "url": f"https://www.youtube.com/watch?v={vid}",
+                                    })
+                            stack.extend(curr.values())
+                        elif isinstance(curr, list):
+                            stack.extend(curr)
+                    if tracks:
+                        return tracks
+            except Exception as e:
+                logger.debug(f"Innertube search failed on profile {prof['clientName']}: {e}")
+                continue
+        return []
+
     async def _fetch_innertube_mix(
         self, video_id: str, limit: int = 15
     ) -> list[Track]:
@@ -775,6 +871,13 @@ class YouTube:
                     "X-YouTube-Client-Name": profile["clientId"],
                     "X-YouTube-Client-Version": profile["clientVersion"],
                 }
+                if profile.get("origin"):
+                    headers["Origin"] = profile["origin"]
+                    headers["Referer"] = profile["origin"] + "/"
+                    headers["Sec-Fetch-Mode"] = "cors"
+                    headers["Sec-Fetch-Site"] = "same-origin"
+                    headers["Sec-Fetch-Dest"] = "empty"
+
                 payload = {
                     "context": {
                         "client": {
@@ -868,134 +971,174 @@ class YouTube:
                 )
                 continue
 
+        # If RD{video_id} returned nothing, fallback to related watch-next secondaryResults
+        if not results:
+            for profile in YT_PROFILES:
+                try:
+                    url = f"https://www.youtube.com/youtubei/v1/next?key={YT_API_KEY}"
+                    headers = {
+                        "Content-Type": "application/json",
+                        "User-Agent": profile["userAgent"],
+                        "Accept": "*/*",
+                        "Accept-Language": "en-US,en;q=0.9",
+                        "X-YouTube-Client-Name": profile["clientId"],
+                        "X-YouTube-Client-Version": profile["clientVersion"],
+                    }
+                    if profile.get("origin"):
+                        headers["Origin"] = profile["origin"]
+                        headers["Referer"] = profile["origin"] + "/"
+                    payload = {
+                        "context": {
+                            "client": {
+                                "clientName": profile["clientName"],
+                                "clientVersion": profile["clientVersion"],
+                                "hl": "en",
+                                "gl": "US",
+                            }
+                        },
+                        "videoId": video_id,
+                    }
+                    async with client.post(
+                        url,
+                        json=payload,
+                        headers=headers,
+                        timeout=aiohttp.ClientTimeout(total=8),
+                    ) as resp:
+                        if resp.status != 200:
+                            continue
+                        data = await resp.json()
+                        sec_results = (
+                            data.get("contents", {})
+                            .get("twoColumnWatchNextResults", {})
+                            .get("secondaryResults", {})
+                            .get("secondaryResults", {})
+                            .get("results", [])
+                        )
+                        for r in sec_results:
+                            cvr = r.get("compactVideoRenderer")
+                            if cvr:
+                                vid = cvr.get("videoId")
+                                if not vid:
+                                    continue
+                                title = (
+                                    cvr.get("title", {}).get("simpleText")
+                                    or "".join(
+                                        x.get("text", "")
+                                        for x in cvr.get("title", {}).get("runs", [])
+                                    )
+                                    or "Track"
+                                )
+                                dur_str = cvr.get("lengthText", {}).get("simpleText", "00:00")
+                                thumbs = cvr.get("thumbnail", {}).get("thumbnails", [])
+                                thumb = (
+                                    thumbs[-1]["url"].split("?")[0]
+                                    if thumbs
+                                    else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                                )
+                                channel = "".join(
+                                    x.get("text", "")
+                                    for x in cvr.get("shortBylineText", {}).get("runs", [])
+                                ) or "YouTube"
+                                results.append(
+                                    Track(
+                                        id=vid,
+                                        channel_name=channel,
+                                        duration=dur_str,
+                                        duration_sec=utils.to_seconds(dur_str),
+                                        title=title,
+                                        thumbnail=thumb,
+                                        url=f"https://www.youtube.com/watch?v={vid}",
+                                        user="Autoplay",
+                                        video=False,
+                                    )
+                                )
+                            lvm = r.get("lockupViewModel")
+                            if lvm and lvm.get("contentType") == "LOCKUP_CONTENT_TYPE_VIDEO":
+                                vid = lvm.get("contentId")
+                                if not vid or len(vid) != 11:
+                                    continue
+                                meta = lvm.get("metadata", {}).get("lockupMetadataViewModel", {})
+                                title = meta.get("title", {}).get("content", "Track")
+                                image = lvm.get("contentImage", {}).get("thumbnailViewModel", {})
+                                thumbs = image.get("image", {}).get("sources", [])
+                                thumb = thumbs[-1]["url"].split("?")[0] if thumbs else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+                                dur_str = "00:00"
+                                for overlay in image.get("overlays", []):
+                                    for badge in overlay.get("thumbnailBottomOverlayViewModel", {}).get("badges", []):
+                                        t_text = badge.get("thumbnailBadgeViewModel", {}).get("text", "")
+                                        if ":" in t_text:
+                                            dur_str = t_text
+                                results.append(
+                                    Track(
+                                        id=vid,
+                                        channel_name="YouTube",
+                                        duration=dur_str,
+                                        duration_sec=utils.to_seconds(dur_str),
+                                        title=title,
+                                        thumbnail=thumb,
+                                        url=f"https://www.youtube.com/watch?v={vid}",
+                                        user="Autoplay",
+                                        video=False,
+                                    )
+                                )
+                        if results:
+                            break
+                except Exception as e:
+                    logger.debug(f"Secondary results failed: {e}")
+                    continue
+
         return results
 
     async def get_recommendations(
         self, target: str, limit: int | None = None
     ) -> list[Track]:
         """
-        Fetch recommended tracks for a given track URL, ID, or query, matching TgMusicBot's GetRecommendations.
-        1. Native YouTube Mix via Innertube (/youtubei/v1/next RD{id})
-        2. API recommendations (/api/mix)
-        3. py_yt Recommendations fallback
+        Fetch recommended tracks for a given track URL, ID, or query, exactly matching TgMusicBot's GetRecommendations.
         """
         if not limit or limit <= 0:
             limit = getattr(config, "AUTO_PLAY_LIMIT", 15)
-        seed_id = extract_video_id(target)
-        if not seed_id and target:
+
+        target_clean = str(target).strip()
+        if not target_clean:
+            return []
+
+        if len(target_clean) == 11 and not any(c in target_clean for c in " /?:"):
+            url_to_use = f"https://www.youtube.com/watch?v={target_clean}"
+            seed_id = target_clean
+        else:
+            url_to_use = target_clean
+            seed_id = extract_video_id(url_to_use)
+
+        # If target is not a URL, resolve seed via InnerTube search (matching TgMusicBot)
+        if not url_to_use.lower().startswith("http://") and not url_to_use.lower().startswith("https://"):
             try:
-                res = await self.search(target, limit=1)
-                if res and isinstance(res, list) and res[0].get("id"):
-                    seed_id = res[0]["id"]
+                matches = await self._innertube_search(url_to_use, limit=1)
+                if matches:
+                    url_to_use = matches[0]["url"]
+                    seed_id = matches[0]["id"]
+            except Exception as e:
+                logger.debug(f"Innertube seed search failed: {e}")
+
+        if not seed_id:
+            try:
+                search_track = await self.search(target_clean, 0)
+                if search_track and search_track.id:
+                    seed_id = search_track.id
+                    url_to_use = f"https://www.youtube.com/watch?v={seed_id}"
             except Exception:
                 pass
 
         if not seed_id:
             return []
 
-        # 1. Native YouTube Mix
+        # 1. Native YouTube Mix (Innertube Next API - matching TgMusicBot)
         tracks = await self._fetch_innertube_mix(seed_id, limit=limit)
-
-        # 2. API /api/mix fallback
-        if not tracks:
-            try:
-                client = await self.get_client()
-                params = self._get_params({"query": seed_id, "limit": limit})
-                async with client.get(
-                    f"{self.api_url}/api/mix",
-                    params=params,
-                    timeout=aiohttp.ClientTimeout(total=8),
-                ) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        for item in data.get("result", []):
-                            vid = item.get("id")
-                            if not vid:
-                                continue
-                            thumb = ""
-                            if item.get("thumbnails") and isinstance(
-                                item["thumbnails"], list
-                            ):
-                                thumb = item["thumbnails"][0].get("url", "")
-                            elif item.get("thumbnail"):
-                                thumb = item.get("thumbnail")
-                            thumb = (
-                                thumb.split("?")[0]
-                                if thumb
-                                else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
-                            )
-                            dur = item.get("duration", "00:00")
-                            channel = (
-                                item.get("author", {}).get("name")
-                                if isinstance(item.get("author"), dict)
-                                else item.get("channel", {}).get("name", "YouTube")
-                                if isinstance(item.get("channel"), dict)
-                                else "YouTube"
-                            )
-                            tracks.append(
-                                Track(
-                                    id=vid,
-                                    channel_name=channel,
-                                    duration=dur,
-                                    duration_sec=utils.to_seconds(dur),
-                                    title=item.get("title", "Track"),
-                                    thumbnail=thumb,
-                                    url=item.get("link")
-                                    or f"https://www.youtube.com/watch?v={vid}",
-                                    user="Autoplay",
-                                    video=False,
-                                )
-                            )
-            except Exception as e:
-                logger.debug(f"API /api/mix failed: {e}")
-
-        # 3. Secondary py_yt fallback
-        if not tracks:
-            try:
-                get_rel = getattr(Recommendations, "get_related", None) or getattr(
-                    Recommendations, "getRelated", None
-                )
-                if get_rel:
-                    _results = await get_rel(seed_id)
-                    if isinstance(_results, dict):
-                        videos = _results.get("result", []) or _results.get(
-                            "videos", []
-                        )
-                        for data in videos:
-                            vid = data.get("id")
-                            if not vid:
-                                continue
-                            dur = data.get("duration", "00:00")
-                            thumbs = data.get("thumbnails", [{}])
-                            thumb = (
-                                thumbs[-1].get("url", "").split("?")[0]
-                                if thumbs
-                                else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
-                            )
-                            tracks.append(
-                                Track(
-                                    id=vid,
-                                    channel_name=data.get("channel", {}).get(
-                                        "name", "YouTube"
-                                    ),
-                                    duration=dur,
-                                    duration_sec=utils.to_seconds(dur),
-                                    title=data.get("title", "Track"),
-                                    thumbnail=thumb,
-                                    url=data.get("link")
-                                    or f"https://www.youtube.com/watch?v={vid}",
-                                    user="Autoplay",
-                                    video=False,
-                                )
-                            )
-            except Exception as e:
-                logger.debug(f"py_yt Recommendations failed: {e}")
 
         # Filter out seed ID and duplicates preserving order
         seen = set()
         unique_tracks: list[Track] = []
         for t in tracks:
-            if t.id == seed_id or t.url == target:
+            if t.id == seed_id or t.url == url_to_use:
                 continue
             if t.id in seen:
                 continue
@@ -1015,7 +1158,7 @@ class YouTube:
     ) -> Track | None:
         """
         Get the next recommended track for autoplay, matching TgMusicBot's handleAutoplay:
-        - Retrieves recommendations using native YouTube Mix / API
+        - Retrieves recommendations via GetRecommendations
         - Filters out already played tracks using chat autoplay history
         - Enforces duration limits
         - Randomly shuffles candidates
@@ -1025,7 +1168,12 @@ class YouTube:
 
         history = queue.get_autoplay_history(chat_id) if chat_id else []
 
-        tracks = await self.get_recommendations(video_id, limit=20)
+        limit = getattr(config, "AUTO_PLAY_LIMIT", 15)
+        if len(history) >= limit and chat_id:
+            queue.clear_autoplay_history(chat_id)
+            history = []
+
+        tracks = await self.get_recommendations(video_id, limit=limit)
         if not tracks:
             return None
 
