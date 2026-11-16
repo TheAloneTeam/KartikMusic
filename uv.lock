@@ -818,7 +818,7 @@ dependencies = [
     { name = "pytgcrypto" },
     { name = "python-dotenv" },
     { name = "yt-dlp", version = "2026.10.21.202512.dev0", source = { registry = "https://pypi.org/simple" }, extra = ["default"], marker = "python_full_version < '3.11'" },
-    { name = "yt-dlp", version = "2026.11.14.232655.dev0", source = { registry = "https://pypi.org/simple" }, extra = ["default"], marker = "python_full_version >= '3.11'" },
+    { name = "yt-dlp", version = "2026.11.15.232800.dev0", source = { registry = "https://pypi.org/simple" }, extra = ["default"], marker = "python_full_version >= '3.11'" },
 ]
 
 [package.metadata]
@@ -2400,15 +2400,15 @@ default = [
 
 [[package]]
 name = "yt-dlp"
-version = "2026.11.14.232655.dev0"
+version = "2026.11.15.232800.dev0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.13'",
     "python_full_version >= '3.11' and python_full_version < '3.13'",
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/61/d8de34846daf3ee7e092176af098ebfbf15205f17709bdc34638b301ddf6/yt_dlp-2026.11.14.232655.dev0.tar.gz", hash = "sha256:94d37803babd99bf2db63c1132ed9aef3392391ab1b0dfb223f1a09d9e20d18d", size = 3050007, upload-time = "2026-11-14T23:32:03.685Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/05/d34a3279b47b2cb06cb2e50fafb938c8a738647223184c234ea57e1cd4f8/yt_dlp-2026.11.15.232800.dev0.tar.gz", hash = "sha256:1583368dc85f1eafc30886a03ae290748b307a511ddd5e2770e66e2eb24e6f30", size = 3050185, upload-time = "2026-11-15T23:32:16.302Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/c0/578b0b9afc51a62d41a78e4d6b68f5649c0f4222e4fcb558ea8bbb5c1fe2/yt_dlp-2026.11.14.232655.dev0-py3-none-any.whl", hash = "sha256:4227d38f2889a266147679037e05fb4318cdc7a466e8ce9bf586dc85bf09c21e", size = 3186647, upload-time = "2026-11-14T23:32:01.647Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/5a/49a728c5da797f9b29628ec3022d8ba771777b994d2045d9f18d6fb366c8/yt_dlp-2026.11.15.232800.dev0-py3-none-any.whl", hash = "sha256:b2ae87bc3499b8016aa3df2f36b31eaced2b1651d7719b72625e82962e52c742", size = 3186776, upload-time = "2026-11-15T23:32:14.399Z" },
 ]
 
 [package.optional-dependencies]
