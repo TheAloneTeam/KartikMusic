@@ -335,9 +335,7 @@ class Inline:
             rows += [[self.ikb(text=lang["language"], callback_data="language")]]
         return self.ikm(rows)
 
-    def join_key(
-        self, lang: dict | None = None
-    ) -> types.InlineKeyboardMarkup:
+    def join_key(self, lang: dict | None = None) -> types.InlineKeyboardMarkup:
         _lang = lang or {}
         add_text = _lang.get("ADD_ME_BTN", _lang.get("add_me", "Add me to your group"))
         updates_text = _lang.get("UPDATES_BTN", _lang.get("channel", "Updates"))

@@ -110,7 +110,9 @@ async def pending_join_requests_handler(client, update, users, chats):
     # Automatically approves all pending requests in the chat
     update_name = update.__class__.__name__
     if update_name in ("UpdateChatPendingJoinRequests", "UpdatePendingJoinRequests"):
-        chat_id = getattr(update, "chat_id", None) or getattr(update, "channel_id", None)
+        chat_id = getattr(update, "chat_id", None) or getattr(
+            update, "channel_id", None
+        )
         if not chat_id:
             return
         try:
