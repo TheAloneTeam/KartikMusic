@@ -179,5 +179,9 @@
     "clean_status_disabled": "अक्षम ❌",
     "clean_usage": "<b>क्लीन मोड (कमांड डिलीट)</b>\n\n<b>स्थिति:</b> {0}\n\n<b>उपयोग:</b>\n<code>/clean [on|off]</code>",
     "clean_enabled": "<b>क्लीन मोड सक्षम किया गया।</b>\nअब कमांड अपने आप हटा दी जाएँगी।",
-    "clean_disabled": "<b>क्लीन मोड अक्षम किया गया।</b>\nअब कमांड अपने आप नहीं हटाई जाएँगी।"
+    "clean_disabled": "<b>क्लीन मोड अक्षम किया गया।</b>\nअब कमांड अपने आप नहीं हटाई जाएँगी।",
+    "join_caption": "<b>HeY {user}</b>\n<b>YOUR REQUEST TO JOIn {chat}\nHAS BEEn APPROVED! </b>\n\n<b>I'M {bOt} - A HIGH QUALITY MUSIC STREAMING BOT FOR TELEGRAM GROUPS &\nCHANNELS\n</b>\n\n<b>JUST SEnD /\nStarT TO SEE BOT MENU AND COMMANDS\n</b>",
+    "ADD_ME_BTN": "मुझे अपने समूह में जोड़ें",
+    "UPDATES_BTN": "अपडेट",
+    "SUPPORT_BTN": "समर्थन"
 }
