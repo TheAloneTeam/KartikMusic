@@ -108,10 +108,15 @@ class Language:
                 ):
                     return
                 finally:
-                    if hasattr(fallen, "command") and chat.type in [
-                        enums.ChatType.GROUP,
-                        enums.ChatType.SUPERGROUP,
-                    ] and await db.get_cmd_delete(chat.id):
+                    if (
+                        hasattr(fallen, "command")
+                        and chat.type
+                        in [
+                            enums.ChatType.GROUP,
+                            enums.ChatType.SUPERGROUP,
+                        ]
+                        and await db.get_cmd_delete(chat.id)
+                    ):
                         try:
                             await fallen.delete()
                         except Exception:
