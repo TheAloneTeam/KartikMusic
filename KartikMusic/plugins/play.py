@@ -41,7 +41,16 @@ async def play_hndlr(
     video: bool = False,
     url: str | None = None,
 ) -> None:
-    sent = await m.reply_text(m.lang["play_searching"])
+    try:
+        sent = await m.reply_text(m.lang["play_searching"])
+    except Exception:
+        sent = await app.send_message(m.chat.id, m.lang["play_searching"])
+
+    if await db.get_cmd_delete(m.chat.id):
+        try:
+            await m.delete()
+        except Exception:
+            pass
     file = None
     mention = m.from_user.mention
     media = tg.get_media(m.reply_to_message) if m.reply_to_message else None

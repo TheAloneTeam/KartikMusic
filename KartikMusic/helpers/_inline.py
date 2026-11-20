@@ -215,6 +215,25 @@ class Inline:
             [[self.ikb(text=_text, callback_data=f"controls {_action} {chat_id} q")]]
         )
 
+    def clean_markup(
+        self, lang: dict, chat_id: int, state: bool
+    ) -> types.InlineKeyboardMarkup:
+        _text = (
+            lang.get("clean_status_enabled", "Enabled ✅")
+            if state
+            else lang.get("clean_status_disabled", "Disabled ❌")
+        )
+        return self.ikm(
+            [
+                [
+                    self.ikb(
+                        text=_text,
+                        callback_data=f"clean_tgl {chat_id}",
+                    )
+                ]
+            ]
+        )
+
     def settings_markup(
         self,
         lang: dict,

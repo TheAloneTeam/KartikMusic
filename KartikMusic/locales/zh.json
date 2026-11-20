@@ -174,5 +174,10 @@
     "thumb_on": "Thumbnail enabled.",
     "vclog_on": "<b>VC Logger enabled by</b> {0}",
     "autoplay_next": "自动播放已开启。请稍等... 正在获取并下载相关曲目。",
-    "autoplay_skip": "<b>{0} 已跳过串流</b>\n\n自动播放已开启。正在获取相关曲目，请稍候..."
+    "autoplay_skip": "<b>{0} 已跳过串流</b>\n\n自动播放已开启。正在获取相关曲目，请稍候...",
+    "clean_status_enabled": "Enabled ✅",
+    "clean_status_disabled": "Disabled ❌",
+    "clean_usage": "<b>Clean Mode (Command Deletion)</b>\n\n<b>Status:</b> {0}\n\n<b>Usage:</b>\n<code>/clean [on|off]</code>",
+    "clean_enabled": "<b>Clean Mode enabled.</b>\nCommands will now be automatically deleted.",
+    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted."
 }

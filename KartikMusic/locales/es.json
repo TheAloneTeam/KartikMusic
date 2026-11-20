@@ -174,5 +174,10 @@
     "thumb_on": "Thumbnail enabled.",
     "vclog_on": "<b>VC Logger enabled by</b> {0}",
     "autoplay_next": "La reproducción automática está activada. Espera un momento... Buscando y descargando una pista relacionada.",
-    "autoplay_skip": "<b>Transmisión omitida por {0}</b>\n\nLa reproducción automática está activada. Buscando una pista relacionada, espera por favor..."
+    "autoplay_skip": "<b>Transmisión omitida por {0}</b>\n\nLa reproducción automática está activada. Buscando una pista relacionada, espera por favor...",
+    "clean_status_enabled": "Enabled ✅",
+    "clean_status_disabled": "Disabled ❌",
+    "clean_usage": "<b>Clean Mode (Command Deletion)</b>\n\n<b>Status:</b> {0}\n\n<b>Usage:</b>\n<code>/clean [on|off]</code>",
+    "clean_enabled": "<b>Clean Mode enabled.</b>\nCommands will now be automatically deleted.",
+    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted."
 }

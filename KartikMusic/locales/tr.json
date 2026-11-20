@@ -174,5 +174,10 @@
     "thumb_on": "Thumbnail enabled.",
     "vclog_on": "<b>VC Logger enabled by</b> {0}",
     "autoplay_next": "Otomatik oynatma açık. Bekleyin... İlgili bir parça getiriliyor ve indiriliyor.",
-    "autoplay_skip": "<b>Yayın {0} tarafından atlandı</b>\n\nOtomatik oynatma açık. İlgili bir parça getiriliyor, lütfen bekleyin..."
+    "autoplay_skip": "<b>Yayın {0} tarafından atlandı</b>\n\nOtomatik oynatma açık. İlgili bir parça getiriliyor, lütfen bekleyin...",
+    "clean_status_enabled": "Enabled ✅",
+    "clean_status_disabled": "Disabled ❌",
+    "clean_usage": "<b>Clean Mode (Command Deletion)</b>\n\n<b>Status:</b> {0}\n\n<b>Usage:</b>\n<code>/clean [on|off]</code>",
+    "clean_enabled": "<b>Clean Mode enabled.</b>\nCommands will now be automatically deleted.",
+    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted."
 }

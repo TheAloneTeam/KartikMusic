@@ -174,5 +174,10 @@
     "help_11": "ऑटोप्ले",
     "help_thumb": "<u><b>थंबनेल आदेश:</b></u>\n\n/nothumb [enable|disable]: चैट के लिए थंबनेल चालू या बंद करें।",
     "queue_finished": "🎵𝐓ʜᴇ 𝐐ᴜᴇᴜᴇ 𝐇ᴀs 𝐅ɪɴɪsʜᴇᴅ. 𝐔sᴇ /play 𝐓ᴏ 𝐀ᴅᴅ 𝐌ᴏʀᴇ 𝐒ᴏɴɢs.⚡️",
-    "add_mee": "मुझे जोड़ें"
+    "add_mee": "मुझे जोड़ें",
+    "clean_status_enabled": "सक्षम ✅",
+    "clean_status_disabled": "अक्षम ❌",
+    "clean_usage": "<b>क्लीन मोड (कमांड डिलीट)</b>\n\n<b>स्थिति:</b> {0}\n\n<b>उपयोग:</b>\n<code>/clean [on|off]</code>",
+    "clean_enabled": "<b>क्लीन मोड सक्षम किया गया।</b>\nअब कमांड अपने आप हटा दी जाएँगी।",
+    "clean_disabled": "<b>क्लीन मोड अक्षम किया गया।</b>\nअब कमांड अपने आप नहीं हटाई जाएँगी।"
 }

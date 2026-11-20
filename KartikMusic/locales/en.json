@@ -173,5 +173,11 @@
     "help_9": "Thumbnail",
     "help_10": "VC Logger",
     "help_11": "Autoplay",
-    "help_thumb": "<u><b>Thumbnail commands:</b></u>\n\n/nothumb [enable|disable]: Toggles the thumbnail off/on for the chat."
-, "queue_finished": "🎵𝐓ʜᴇ 𝐐ᴜᴇᴜᴇ 𝐇ᴀs 𝐅ɪɴɪsʜᴇᴅ. 𝐔sᴇ /play 𝐓ᴏ 𝐀ᴅᴅ 𝐌ᴏʀᴇ 𝐒ᴏɴɢs.⚡️"}
+    "help_thumb": "<u><b>Thumbnail commands:</b></u>\n\n/nothumb [enable|disable]: Toggles the thumbnail off/on for the chat.",
+    "queue_finished": "🎵𝐓ʜᴇ 𝐐ᴜᴇᴜᴇ 𝐇ᴀs 𝐅ɪɴɪsʜᴇᴅ. 𝐔sᴇ /play 𝐓ᴏ 𝐀ᴅᴅ 𝐌ᴏʀᴇ 𝐒ᴏɴɢs.⚡️",
+    "clean_status_enabled": "Enabled ✅",
+    "clean_status_disabled": "Disabled ❌",
+    "clean_usage": "<b>Clean Mode (Command Deletion)</b>\n\n<b>Status:</b> {0}\n\n<b>Usage:</b>\n<code>/clean [on|off]</code>",
+    "clean_enabled": "<b>Clean Mode enabled.</b>\nCommands will now be automatically deleted.",
+    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted."
+}

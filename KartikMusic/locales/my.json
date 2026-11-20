@@ -174,5 +174,10 @@
     "thumb_on": "Thumbnail enabled.",
     "vclog_on": "<b>VC Logger enabled by</b> {0}",
     "autoplay_next": "အလိုအလျောက်ဖွင့်ခြင်း ဖွင့်ထားသည်။ ခဏစောင့်ပါ... ဆက်စပ်သီချင်းကို ရှာဖွေပြီး ဒေါင်းလုဒ်လုပ်နေသည်။",
-    "autoplay_skip": "<b>{0} မှ ကျော်လိုက်သည်</b>\n\nအလိုအလျောက်ဖွင့်ခြင်း ဖွင့်ထားသည်။ ဆက်စပ်သီချင်းကို ရှာဖွေနေသည်၊ ကျေးဇူးပြု၍ စောင့်ပါ..."
+    "autoplay_skip": "<b>{0} မှ ကျော်လိုက်သည်</b>\n\nအလိုအလျောက်ဖွင့်ခြင်း ဖွင့်ထားသည်။ ဆက်စပ်သီချင်းကို ရှာဖွေနေသည်၊ ကျေးဇူးပြု၍ စောင့်ပါ...",
+    "clean_status_enabled": "Enabled ✅",
+    "clean_status_disabled": "Disabled ❌",
+    "clean_usage": "<b>Clean Mode (Command Deletion)</b>\n\n<b>Status:</b> {0}\n\n<b>Usage:</b>\n<code>/clean [on|off]</code>",
+    "clean_enabled": "<b>Clean Mode enabled.</b>\nCommands will now be automatically deleted.",
+    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted."
 }

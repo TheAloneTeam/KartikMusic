@@ -225,9 +225,11 @@ class MongoDB:
 
     async def set_cmd_delete(self, chat_id: int, delete: bool = False) -> None:
         if delete:
-            self.cmd_delete.append(chat_id)
+            if chat_id not in self.cmd_delete:
+                self.cmd_delete.append(chat_id)
         else:
-            self.cmd_delete.remove(chat_id)
+            if chat_id in self.cmd_delete:
+                self.cmd_delete.remove(chat_id)
         await self.chatsdb.update_one(
             {"_id": chat_id},
             {"$set": {"cmd_delete": delete}},
