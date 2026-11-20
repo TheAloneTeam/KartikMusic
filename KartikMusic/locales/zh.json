@@ -37,7 +37,7 @@
     "gcast_start": "广播已开始。",
     "gcast_end": "消息已广播至 {0} 个群组和 {1} 个用户。",
     "help_menu": "<b>单击下面的按钮以获取有关我的命令的信息。</b>\n\n<i><b>注意: </b>所有命令都可以与 / 一起使用</i>",
-    "help_admins": "<u><b>管理员命令: </b></u>\n\n/pause: 暂停正在进行的流。\n/resume: 恢复暂停的流。\n/skip: 跳过当前流。\n/stop: 停止正在进行的流。\n\n/seek [持续时间, 以秒为单位]: 在正在进行的流中查找。\n/seekback [持续时间, 以秒为单位]: 在正在进行的流中向后查找。\n\n/reload: 重新加载管理员缓存。",
+    "help_admins": "<u><b>管理员命令: </b></u>\n\n/pause: 暂停正在进行的流。\n/resume: 恢复暂停的流。\n/skip: 跳过当前流。\n/stop: 停止正在进行的流。\n\n/seek [持续时间, 以秒为单位]: 在正在进行的流中查找。\n/seekback [持续时间, 以秒为单位]: 在正在进行的流中向后查找。\n\n/reload: 重新加载管理员缓存。\n\n/clean [on|off]: Toggles command auto-deletion in the chat.",
     "help_auth": "<u><b>授权命令: </b></u>\n<i>授权用户无需成为管理员即可控制正在进行的流。</i>\n\n/auth: 将用户添加到授权用户列表。\n/unauth: 从授权用户列表中删除用户。",
     "help_blist": "<u><b>黑名单命令: </b></u>\n<i>黑名单中的聊天和用户无法使用该机器人。</i>\n\n/blacklist [chat_id|user_id]: 将聊天/用户添加到黑名单。\n/unblacklist [chat_id|user_id]: 从黑名单中删除聊天/用户",
     "help_lang": "<u><b>语言命令: </b></u>\n<i>此机器人支持多种语言。</i>\n\n/lang: 更改机器人的语言。",
