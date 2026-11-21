@@ -335,26 +335,6 @@ class Inline:
             rows += [[self.ikb(text=lang["language"], callback_data="language")]]
         return self.ikm(rows)
 
-    def join_key(self, lang: dict | None = None) -> types.InlineKeyboardMarkup:
-        _lang = lang or {}
-        add_text = _lang.get("ADD_ME_BTN", _lang.get("add_me", "Add me to your group"))
-        updates_text = _lang.get("UPDATES_BTN", _lang.get("channel", "Updates"))
-        support_text = _lang.get("SUPPORT_BTN", _lang.get("support", "Support"))
-        return self.ikm(
-            [
-                [
-                    self.ikb(
-                        text=add_text,
-                        url=f"https://t.me/{app.username}?startgroup&admin=invite_users",
-                    )
-                ],
-                [
-                    self.ikb(text=updates_text, url=config.SUPPORT_CHANNEL),
-                    self.ikb(text=support_text, url=config.SUPPORT_CHAT),
-                ],
-            ]
-        )
-
     def yt_key(self, link: str) -> types.InlineKeyboardMarkup:
         return self.ikm(
             [

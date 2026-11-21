@@ -179,9 +179,5 @@
     "clean_status_disabled": "Disabled ❌",
     "clean_usage": "<b>Clean Mode (Command Deletion)</b>\n\n<b>Status:</b> {0}\n\n<b>Usage:</b>\n<code>/clean [on|off]</code>",
     "clean_enabled": "<b>Clean Mode enabled.</b>\nCommands will now be automatically deleted.",
-    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted.",
-    "join_caption": "<b>HeY {user}</b>\n<b>YOUR REQUEST TO JOIn {chat}\nHAS BEEn APPROVED! </b>\n\n<b>I'M {bOt} - A HIGH QUALITY MUSIC STREAMING BOT FOR TELEGRAM GROUPS &\nCHANNELS\n</b>\n\n<b>JUST SEnD /\nStarT TO SEE BOT MENU AND COMMANDS\n</b>",
-    "ADD_ME_BTN": "သင့်အုပ်စုသို့ ထည့်ပါ",
-    "UPDATES_BTN": "အပ်ဒိတ်များ",
-    "SUPPORT_BTN": "ပံ့ပိုးကူညီမှု"
+    "clean_disabled": "<b>Clean Mode disabled.</b>\nCommands will no longer be automatically deleted."
 }
