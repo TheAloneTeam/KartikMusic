@@ -32,6 +32,7 @@ API_KEY = os.getenv("API_KEY", "riteshpermanent_51059fe1467bb92a2a457999")
 
 DEFAULT_API_URL = API_URL
 DEFAULT_API_KEY = API_KEY
+CHUNK_SIZE = 65536  # 64 KB for fast initial buffering without overloading server
 
 VIDEO_ID_REGEX = [
     re.compile(
@@ -301,6 +302,7 @@ class YouTube:
             r"(?!/(watch\?v=[A-Za-z0-9_-]{11}|shorts/[A-Za-z0-9_-]{11}"
             r"|playlist\?list=PL[A-Za-z0-9_-]+|[A-Za-z0-9_-]{11}))\S*"
         )
+        self.chunk_size = CHUNK_SIZE
         self._client = None
 
     async def get_client(self):
@@ -424,8 +426,18 @@ class YouTube:
     async def download_track(
         self, link: str, chat_id: int | None = None, *args, **kwargs
     ) -> str | None:
-        """Voicechat bot helper: construct direct stream URL for a given track link."""
-        return self.get_stream_url(link, dl_type="audio")
+        """Voicechat bot helper: construct direct stream URL and ensure initial chunk is buffered."""
+        return await self.download(link, video=False)
+
+    async def stream(
+        self,
+        video_id: str,
+        video: bool = False,
+        *args,
+        **kwargs,
+    ) -> str | None:
+        """Streaming helper: construct stream URL and buffer initial 64 KB (65536 bytes) chunk."""
+        return await self.download(video_id, video=video, *args, **kwargs)
 
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
         client = await self.get_client()
@@ -1284,7 +1296,7 @@ class YouTube:
             client = await self.get_client()
             async with client.get(stream_url, timeout=30) as resp:
                 if resp.status in [200, 206]:
-                    await resp.content.read(1024)
+                    await resp.content.read(self.chunk_size)
                 else:
                     logger.warning(
                         f"Download stream URL returned status {resp.status} for {video_id}"
@@ -1338,6 +1350,7 @@ all_support = YouTube(api_key=API_KEY, api_url=API_URL)
 __all__ = [
     "API_KEY",
     "API_URL",
+    "CHUNK_SIZE",
     "DEFAULT_API_KEY",
     "DEFAULT_API_URL",
     "AllSupport",
